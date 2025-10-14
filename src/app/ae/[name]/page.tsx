@@ -156,8 +156,10 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.totalClients}
-                    onChange={(e) => setFormData({ ...formData, totalClients: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, totalClients: parseInt(e.target.value) || 0 })}
                     className="input-field w-full px-4 py-3 rounded-lg text-gray-100 number-display text-lg"
                     required
                     min="0"
@@ -172,8 +174,10 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.expiringClients}
-                    onChange={(e) => setFormData({ ...formData, expiringClients: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, expiringClients: parseInt(e.target.value) || 0 })}
                     className="input-field w-full px-4 py-3 rounded-lg text-gray-100 number-display text-lg"
                     required
                     min="0"
@@ -188,8 +192,10 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.renewedClients}
-                    onChange={(e) => setFormData({ ...formData, renewedClients: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, renewedClients: parseInt(e.target.value) || 0 })}
                     className="input-field w-full px-4 py-3 rounded-lg text-gray-100 number-display text-lg"
                     required
                     min="0"

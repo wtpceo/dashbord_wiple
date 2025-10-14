@@ -2,19 +2,16 @@
 
 import { AEName } from '@/types/dashboard';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const aeList: AEName[] = ['이수빈', '최호천', '조아라', '정우진', '김민우', '양주미'];
 
 export default function AELoginPage() {
-  const [selectedAE, setSelectedAE] = useState<AEName | null>(null);
   const router = useRouter();
 
-  const handleLogin = () => {
-    if (selectedAE) {
-      router.push(`/ae/${encodeURIComponent(selectedAE)}`);
-    }
+  const handleSelectAE = (ae: AEName) => {
+    // 클릭하면 바로 해당 AE 페이지로 이동
+    router.push(`/ae/${encodeURIComponent(ae)}`);
   };
 
   return (
@@ -37,31 +34,17 @@ export default function AELoginPage() {
               {aeList.map((ae) => (
                 <button
                   key={ae}
-                  onClick={() => setSelectedAE(ae)}
-                  className={`w-full p-4 rounded-lg text-left font-semibold transition-all ${
-                    selectedAE === ae
-                      ? 'bg-blue-500/20 border-2 border-blue-500/50 text-blue-400'
-                      : 'bg-gray-800/30 border-2 border-gray-700/50 text-gray-300 hover:bg-gray-800/50 hover:border-gray-600/50'
-                  }`}
+                  onClick={() => handleSelectAE(ae)}
+                  className="w-full p-5 rounded-lg text-left font-semibold transition-all bg-gray-800/30 border-2 border-gray-700/50 text-gray-100 hover:bg-blue-500/20 hover:border-blue-500/50 hover:text-blue-400 active:scale-95"
                 >
-                  {ae}
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">{ae}</span>
+                    <span className="text-gray-500">→</span>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
-
-          {/* 로그인 버튼 */}
-          <button
-            onClick={handleLogin}
-            disabled={!selectedAE}
-            className={`w-full py-4 rounded-lg font-semibold transition-all ${
-              selectedAE
-                ? 'btn-primary'
-                : 'bg-gray-800/50 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {selectedAE ? `${selectedAE}으로 입장` : '이름을 선택하세요'}
-          </button>
 
           {/* 돌아가기 */}
           <div className="mt-6 text-center">
