@@ -60,6 +60,7 @@ export default function DashboardPage() {
       acc.totalClients += thisWeekReport.totalClients;
       acc.expiringClients += thisWeekReport.expiringClients;
       acc.renewedClients += thisWeekReport.renewedClients;
+      acc.renewalRevenue += thisWeekReport.renewalRevenue || 0;
       acc.reportedAEs += 1;
     }
     
@@ -68,6 +69,7 @@ export default function DashboardPage() {
     totalClients: 0,
     expiringClients: 0,
     renewedClients: 0,
+    renewalRevenue: 0,
     reportedAEs: 0
   });
 
@@ -285,7 +287,7 @@ export default function DashboardPage() {
             ) : (
               <div>
                 {/* 주간 집계 KPI */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                   <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
                     <div className="text-xs text-gray-400 mb-1">총 담당 업체</div>
                     <div className="text-2xl font-bold text-gray-100 number-display">{weeklyAggregation.totalClients}</div>
@@ -297,6 +299,12 @@ export default function DashboardPage() {
                   <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/30">
                     <div className="text-xs text-green-400 mb-1">연장 성공</div>
                     <div className="text-2xl font-bold text-green-400 number-display">{weeklyAggregation.renewedClients}</div>
+                  </div>
+                  <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
+                    <div className="text-xs text-purple-400 mb-1">연장 매출</div>
+                    <div className="text-xl font-bold text-purple-400 number-display">
+                      {formatCurrency(weeklyAggregation.renewalRevenue)}
+                    </div>
                   </div>
                   <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
                     <div className="text-xs text-blue-400 mb-1">주간 연장율</div>
@@ -314,6 +322,7 @@ export default function DashboardPage() {
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">담당</th>
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">종료 예정</th>
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">연장 성공</th>
+                        <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">연장 매출</th>
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">연장율</th>
                         <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400">상태</th>
                       </tr>
@@ -352,6 +361,15 @@ export default function DashboardPage() {
                             <span className="text-green-400 font-semibold number-display">
                               {ae.reported ? ae.renewedClients : '-'}
                             </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {ae.reported && ae.renewalRevenue ? (
+                              <span className="text-purple-400 font-semibold number-display">
+                                {formatCurrency(ae.renewalRevenue)}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-right">
                             {ae.reported ? (
