@@ -28,16 +28,9 @@ export default function DashboardPage() {
     await reloadData();
   };
 
-  // 매출 증가율 계산
-  const revenueGrowth = calculateGrowthRate(
-    data.currentMonthRevenue.total,
-    data.lastMonthRevenue.total
-  );
-
-  // 목표 달성률 계산
-  const achievementRate = data.targetRevenue > 0 
-    ? (data.currentMonthRevenue.total / data.targetRevenue) * 100 
-    : 0;
+  // 임시로 data에서 가져온 후 나중에 계산된 값으로 대체 예정
+  let tempLastMonthRevenue = data.lastMonthRevenue.total;
+  let tempCurrentMonthRevenue = 0;  // 계산된 값으로 대체될 것
 
   // AE 데이터 집계 함수
   const getCurrentWeekFromDate = () => {
@@ -182,6 +175,111 @@ export default function DashboardPage() {
     return (b.newRevenue || 0) - (a.newRevenue || 0);
   });
 
+  // ============================================
+  // 📊 실제 데이터 기반 계산
+  // ============================================
+  
+  // 1. 이번달 신규 매출 = 모든 영업사원들의 매출의 합
+  const calculatedNewRevenue = salesAggregation.newRevenue;
+  
+  // 2. 이번달 연장 매출 = AE들의 연장 매출의 합
+  const calculatedRenewalRevenue = weeklyAggregation.renewalRevenue;
+  
+  // 3. 이번달 총 매출 = 신규 매출 + 연장 매출
+  const calculatedTotalRevenue = calculatedNewRevenue + calculatedRenewalRevenue;
+  
+  // 4. 총 광고주 = AE들이 가지고 있는 광고주의 합
+  const calculatedTotalClients = weeklyAggregation.totalClients;
+  
+  // 5. 매체별 매출 현황 = 영업사원과 AE들의 매체별 매출의 합
+  const calculatedRevenueByChannel = (() => {
+    const channels: { [key: string]: number } = {
+      '토탈 마케팅': 0,
+      '퍼포먼스': 0,
+      '배달관리': 0,
+      '브랜드블로그': 0
+    };
+    
+    // AE 연장 매출 집계
+    data.aeData.forEach(ae => {
+      const weeklyReports = ae.weeklyReports || [];
+      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+      if (thisWeekReport && thisWeekReport.byChannel) {
+        thisWeekReport.byChannel.forEach(ch => {
+          channels[ch.channel] = (channels[ch.channel] || 0) + ch.renewalRevenue;
+        });
+      }
+    });
+    
+    // 영업사원 신규 매출 집계
+    data.salesData.forEach(sales => {
+      const weeklyReports = sales.weeklyReports || [];
+      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+      if (thisWeekReport && thisWeekReport.byChannel) {
+        thisWeekReport.byChannel.forEach(ch => {
+          channels[ch.channel] = (channels[ch.channel] || 0) + ch.newRevenue;
+        });
+      }
+    });
+    
+    return Object.entries(channels).map(([channel, value]) => ({
+      channel: channel as any,
+      value
+    }));
+  })();
+  
+  // 6. 종료 예정 현황 = AE들의 광고주 종료 예정의 합
+  const calculatedExpiringClients = weeklyAggregation.expiringClients;
+  
+  // 7. 연장 현황 = 이번달 AE들의 연장한 업체의 합
+  const calculatedRenewedClients = weeklyAggregation.renewedClients;
+  const calculatedRenewalRate = calculatedExpiringClients > 0 
+    ? (calculatedRenewedClients / calculatedExpiringClients) * 100 
+    : 0;
+  
+  // 8. 신규 광고주 = 영업사원들의 광고주 합
+  const calculatedNewClients = salesAggregation.newClients;
+  
+  // 9. 매체별 광고주 수
+  const calculatedClientsByChannel = (() => {
+    const channels: { [key: string]: number } = {
+      '토탈 마케팅': 0,
+      '퍼포먼스': 0,
+      '배달관리': 0,
+      '브랜드블로그': 0
+    };
+    
+    // AE 담당 광고주 집계
+    data.aeData.forEach(ae => {
+      const weeklyReports = ae.weeklyReports || [];
+      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+      if (thisWeekReport && thisWeekReport.byChannel) {
+        thisWeekReport.byChannel.forEach(ch => {
+          channels[ch.channel] = (channels[ch.channel] || 0) + ch.totalClients;
+        });
+      }
+    });
+    
+    return Object.entries(channels).map(([channel, value]) => ({
+      channel: channel as any,
+      value
+    }));
+  })();
+
+  // 최종 계산된 값들
+  tempCurrentMonthRevenue = calculatedTotalRevenue;
+  
+  // 매출 증가율 계산
+  const revenueGrowth = calculateGrowthRate(
+    tempCurrentMonthRevenue,
+    tempLastMonthRevenue
+  );
+
+  // 목표 달성률 계산
+  const achievementRate = data.targetRevenue > 0 
+    ? (tempCurrentMonthRevenue / data.targetRevenue) * 100 
+    : 0;
+
   if (!mounted) {
     // 서버 렌더링 시에는 로딩 상태 표시
     return (
@@ -256,7 +354,7 @@ export default function DashboardPage() {
             
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">목표: {formatCurrency(data.targetRevenue)}</span>
-              <span className="text-blue-400 font-semibold">{formatCurrency(data.currentMonthRevenue.total)}</span>
+              <span className="text-blue-400 font-semibold">{formatCurrency(calculatedTotalRevenue)}</span>
             </div>
           </div>
 
@@ -264,10 +362,10 @@ export default function DashboardPage() {
           <div className="card-elevated rounded-lg p-6">
             <div className="text-xs font-medium text-gray-400 mb-2">💼 이번달 신규 매출</div>
             <div className="text-4xl font-bold text-green-400 mb-3 number-display">
-              {formatCurrency(salesAggregation.newRevenue)}
+              {formatCurrency(calculatedNewRevenue)}
             </div>
             <div className="text-xs text-gray-500">
-              신규 계약 {salesAggregation.newClients}개
+              신규 계약 {calculatedNewClients}개
             </div>
           </div>
 
@@ -275,10 +373,10 @@ export default function DashboardPage() {
           <div className="card-elevated rounded-lg p-6">
             <div className="text-xs font-medium text-gray-400 mb-2">🔄 이번달 연장 매출</div>
             <div className="text-4xl font-bold text-purple-400 mb-3 number-display">
-              {formatCurrency(weeklyAggregation.renewalRevenue)}
+              {formatCurrency(calculatedRenewalRevenue)}
             </div>
             <div className="text-xs text-gray-500">
-              연장 성공 {weeklyAggregation.renewedClients}개 ({weeklyRenewalRate.toFixed(1)}%)
+              연장 성공 {calculatedRenewedClients}개 ({calculatedRenewalRate.toFixed(1)}%)
             </div>
           </div>
         </div>
@@ -289,7 +387,7 @@ export default function DashboardPage() {
           <div className="card-elevated rounded-lg p-5">
             <div className="text-xs font-medium text-gray-400 mb-2">지난달 총 매출</div>
             <div className="text-3xl font-bold text-gray-100 mb-1 number-display">
-              {formatCurrency(data.lastMonthRevenue.total)}
+              {formatCurrency(tempLastMonthRevenue)}
             </div>
             <div className="text-xs text-gray-500">전월 실적</div>
           </div>
@@ -298,7 +396,7 @@ export default function DashboardPage() {
           <div className="card-elevated rounded-lg p-5">
             <div className="text-xs font-medium text-gray-400 mb-2">이번달 총 매출</div>
             <div className="text-3xl font-bold text-blue-400 mb-1 number-display">
-              {formatCurrency(data.currentMonthRevenue.total)}
+              {formatCurrency(calculatedTotalRevenue)}
             </div>
             <div className={`text-xs font-semibold ${revenueGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
               {revenueGrowth > 0 ? '▲' : '▼'} {Math.abs(revenueGrowth).toFixed(1)}% 전월 대비
@@ -312,11 +410,11 @@ export default function DashboardPage() {
             <div>
               <div className="text-xs font-medium text-gray-400 mb-2">총 광고주</div>
               <div className="text-3xl font-bold text-gray-100 number-display">
-                {data.totalClients.total}개
+                {calculatedTotalClients}개
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 text-right">
-              {data.totalClients.byChannel.map((channel, index) => (
+              {calculatedClientsByChannel.map((channel, index) => (
                 <div key={index}>
                   <div className="text-xs text-gray-400 mb-1">{channel.channel}</div>
                   <div className="text-lg font-bold text-gray-200 number-display">{channel.value}</div>
@@ -587,15 +685,16 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 card-elevated rounded-lg p-6">
             <div className="mb-5">
               <h2 className="text-base font-bold text-gray-100 mb-1">매체별 매출 현황</h2>
-              <p className="text-xs text-gray-400">이번달 vs 지난달</p>
+              <p className="text-xs text-gray-400">이번달 실적 (AE 연장 + 영업사원 신규)</p>
             </div>
             <div className="space-y-4">
-              {data.currentMonthRevenue.byChannel.map((channel, index) => {
-                const lastMonth = data.lastMonthRevenue.byChannel[index].value;
+              {calculatedRevenueByChannel.map((channel, index) => {
+                const lastMonthChannel = data.lastMonthRevenue.byChannel.find(c => c.channel === channel.channel);
+                const lastMonth = lastMonthChannel?.value || 0;
                 const currentMonth = channel.value;
                 const growth = calculateGrowthRate(currentMonth, lastMonth);
-                const maxValue = Math.max(...data.currentMonthRevenue.byChannel.map(c => c.value));
-                const percentage = (currentMonth / maxValue) * 100;
+                const maxValue = Math.max(...calculatedRevenueByChannel.map(c => c.value));
+                const percentage = maxValue > 0 ? (currentMonth / maxValue) * 100 : 0;
 
                 return (
                   <div key={index}>
@@ -605,9 +704,11 @@ export default function DashboardPage() {
                         <span className="text-sm font-semibold text-gray-100 number-display">
                           {formatCurrency(currentMonth)}
                         </span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${growth > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                          {growth > 0 ? '▲' : '▼'} {Math.abs(growth).toFixed(1)}%
-                        </span>
+                        {lastMonth > 0 && (
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${growth > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {growth > 0 ? '▲' : '▼'} {Math.abs(growth).toFixed(1)}%
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="w-full bg-gray-800/50 rounded-full h-2">
