@@ -320,8 +320,6 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                         value={channelData.newRevenue}
                         onChange={(e) => updateSalesChannelData(channelData.channel, 'newRevenue', parseInt(e.target.value) || 0)}
                         className="input-field w-full px-3 py-2 rounded-lg text-gray-100 number-display text-sm"
-                        min="0"
-                        step="100000"
                       />
                     </div>
                   </div>
@@ -548,8 +546,6 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                       value={channelData.renewalRevenue}
                       onChange={(e) => updateChannelData(channelData.channel, 'renewalRevenue', parseInt(e.target.value) || 0)}
                       className="input-field w-full px-3 py-2 rounded-lg text-gray-100 number-display text-sm"
-                      min="0"
-                      step="100000"
                     />
                   </div>
 
