@@ -120,10 +120,10 @@ export const getDashboardData = async (): Promise<DashboardData> => {
   // Supabase 클라이언트 가져오기
   const supabase = getSupabaseClient();
 
-  // Supabase 설정이 없으면 로컬 스토리지 사용
+  // Supabase 설정이 없으면 에러
   if (!supabase) {
-    console.log('Supabase 미설정 - 로컬 스토리지 사용');
-    return getDashboardDataFromLocal();
+    console.error('Supabase 클라이언트가 초기화되지 않았습니다');
+    return generateMockData();
   }
 
   try {
