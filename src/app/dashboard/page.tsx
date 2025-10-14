@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const weeklyAggregation = data.aeData.reduce((acc, ae) => {
     const weeklyReports = ae.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-    
+
     if (thisWeekReport && thisWeekReport.byChannel) {
       // 매체별 데이터를 합산
       thisWeekReport.byChannel.forEach(channelReport => {
@@ -60,7 +60,7 @@ export default function DashboardPage() {
       });
       acc.reportedAEs += 1;
     }
-    
+
     return acc;
   }, {
     totalClients: 0,
@@ -70,15 +70,15 @@ export default function DashboardPage() {
     reportedAEs: 0
   });
 
-  const weeklyRenewalRate = weeklyAggregation.expiringClients > 0 
-    ? (weeklyAggregation.renewedClients / weeklyAggregation.expiringClients) * 100 
+  const weeklyRenewalRate = weeklyAggregation.expiringClients > 0
+    ? (weeklyAggregation.renewedClients / weeklyAggregation.expiringClients) * 100
     : 0;
 
   // AE별 이번달 성과 (매체별 데이터 합산)
   const aeWeeklyPerformance = data.aeData.map(ae => {
     const weeklyReports = ae.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-    
+
     if (!thisWeekReport || !thisWeekReport.byChannel) {
       return {
         name: ae.name,
@@ -120,7 +120,7 @@ export default function DashboardPage() {
   const salesAggregation = data.salesData.reduce((acc, sales) => {
     const weeklyReports = sales.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-    
+
     if (thisWeekReport && thisWeekReport.byChannel) {
       // 매체별 데이터를 합산
       thisWeekReport.byChannel.forEach(channelReport => {
@@ -129,7 +129,7 @@ export default function DashboardPage() {
       });
       acc.reportedSales += 1;
     }
-    
+
     return acc;
   }, {
     newClients: 0,
@@ -141,7 +141,7 @@ export default function DashboardPage() {
   const salesWeeklyPerformance = data.salesData.map(sales => {
     const weeklyReports = sales.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-    
+
     if (!thisWeekReport || !thisWeekReport.byChannel) {
       return {
         name: sales.name,
@@ -159,7 +159,7 @@ export default function DashboardPage() {
     }), { newClients: 0, newRevenue: 0 });
 
     // 가장 많은 매출을 발생시킨 매체 찾기
-    const mainChannel = thisWeekReport.byChannel.reduce((prev, current) => 
+    const mainChannel = thisWeekReport.byChannel.reduce((prev, current) =>
       current.newRevenue > prev.newRevenue ? current : prev
     );
 
@@ -252,7 +252,7 @@ export default function DashboardPage() {
       '배달관리': 0,
       '브랜드블로그': 0
     };
-    
+
     // AE 연장 매출 집계
     data.aeData.forEach(ae => {
       const weeklyReports = ae.weeklyReports || [];
@@ -263,7 +263,7 @@ export default function DashboardPage() {
         });
       }
     });
-    
+
     // 영업사원 신규 매출 집계
     data.salesData.forEach(sales => {
       const weeklyReports = sales.weeklyReports || [];
@@ -274,25 +274,25 @@ export default function DashboardPage() {
         });
       }
     });
-    
+
     return Object.entries(channels).map(([channel, value]) => ({
       channel: channel as any,
       value
     }));
   })();
-  
+
   // 6. 종료 예정 현황 = AE들의 광고주 종료 예정의 합
   const calculatedExpiringClients = weeklyAggregation.expiringClients;
-  
+
   // 7. 연장 현황 = 이번달 AE들의 연장한 업체의 합
   const calculatedRenewedClients = weeklyAggregation.renewedClients;
-  const calculatedRenewalRate = calculatedExpiringClients > 0 
-    ? (calculatedRenewedClients / calculatedExpiringClients) * 100 
+  const calculatedRenewalRate = calculatedExpiringClients > 0
+    ? (calculatedRenewedClients / calculatedExpiringClients) * 100
     : 0;
-  
+
   // 8. 신규 광고주 = 영업사원들의 광고주 합
   const calculatedNewClients = salesAggregation.newClients;
-  
+
   // 8-1. 매체별 신규 광고주 수
   const calculatedNewClientsByChannel = (() => {
     const channels: { [key: string]: number } = {
@@ -301,7 +301,7 @@ export default function DashboardPage() {
       '배달관리': 0,
       '브랜드블로그': 0
     };
-    
+
     // 영업사원 신규 계약 집계
     data.salesData.forEach(sales => {
       const weeklyReports = sales.weeklyReports || [];
@@ -312,13 +312,13 @@ export default function DashboardPage() {
         });
       }
     });
-    
+
     return Object.entries(channels).map(([channel, value]) => ({
       channel: channel as any,
       value
     }));
   })();
-  
+
   // 9. 매체별 광고주 수
   const calculatedClientsByChannel = (() => {
     const channels: { [key: string]: number } = {
@@ -327,7 +327,7 @@ export default function DashboardPage() {
       '배달관리': 0,
       '브랜드블로그': 0
     };
-    
+
     // AE 담당 광고주 집계
     data.aeData.forEach(ae => {
       const weeklyReports = ae.weeklyReports || [];
@@ -338,7 +338,7 @@ export default function DashboardPage() {
         });
       }
     });
-    
+
     return Object.entries(channels).map(([channel, value]) => ({
       channel: channel as any,
       value
@@ -347,7 +347,7 @@ export default function DashboardPage() {
 
   // 최종 계산된 값들
   tempCurrentMonthRevenue = calculatedTotalRevenue;
-  
+
   // 매출 증가율 계산
   const revenueGrowth = calculateGrowthRate(
     tempCurrentMonthRevenue,
@@ -355,8 +355,8 @@ export default function DashboardPage() {
   );
 
   // 목표 달성률 계산
-  const achievementRate = data.targetRevenue > 0 
-    ? (tempCurrentMonthRevenue / data.targetRevenue) * 100 
+  const achievementRate = data.targetRevenue > 0
+    ? (tempCurrentMonthRevenue / data.targetRevenue) * 100
     : 0;
 
   if (!mounted) {
@@ -389,13 +389,13 @@ export default function DashboardPage() {
             >
               {loading ? '로딩 중...' : '🔄 새로고침'}
             </button>
-            <Link 
+            <Link
               href="/ae"
               className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold"
             >
               AE 리포트
             </Link>
-            <Link 
+            <Link
               href="/admin"
               className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold"
             >
@@ -414,21 +414,21 @@ export default function DashboardPage() {
           {/* 목표 달성률 - 대형 카드 */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* 목표 매출 달성률 - 좌측 대형 */}
-            <div className="lg:col-span-5 glow-card card-premium rounded-2xl p-8 group hover:scale-[1.01] transition-all duration-500">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🎯</span>
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">이번달 목표 달성률</span>
+            <div className="lg:col-span-5 glow-card card-premium rounded-2xl p-10 group hover:scale-[1.01] transition-all duration-500">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-4xl">🎯</span>
+              <span className="text-base font-medium text-gray-400 uppercase tracking-wider">이번달 목표 달성률</span>
             </div>
-            <div className="text-5xl font-bold mb-4">
+            <div className="text-7xl font-bold mb-8">
               <span className="gradient-text-animated number-transition">{achievementRate.toFixed(1)}</span>
-              <span className="text-2xl text-gray-400 ml-1">%</span>
+              <span className="text-4xl text-gray-400 ml-2">%</span>
             </div>
 
             {/* 게이지 바 */}
-            <div className="relative mb-4">
-              <div className="progress-bar w-full h-8">
+            <div className="relative mb-8">
+              <div className="progress-bar w-full h-12 rounded-full">
                 <div
-                  className={`progress-fill ${
+                  className={`progress-fill h-12 rounded-full ${
                     achievementRate >= 100
                       ? 'bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400'
                       : achievementRate >= 80
@@ -443,13 +443,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">목표</span>
-              <span className="text-white font-semibold">{formatCurrency(data.targetRevenue)}</span>
+            <div className="flex justify-between text-base">
+              <span className="text-gray-400">목표</span>
+              <span className="text-white font-bold text-lg">{formatCurrency(data.targetRevenue)}</span>
             </div>
-            <div className="flex justify-between text-xs mt-1">
-              <span className="text-gray-500">현재</span>
-              <span className="text-blue-400 font-bold">{formatCurrency(calculatedTotalRevenue)}</span>
+            <div className="flex justify-between text-base mt-2">
+              <span className="text-gray-400">현재</span>
+              <span className="text-blue-400 font-bold text-lg">{formatCurrency(calculatedTotalRevenue)}</span>
             </div>
           </div>
 
@@ -532,6 +532,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
+        </div>
         </div>
         </div>
 
@@ -790,7 +791,7 @@ export default function DashboardPage() {
                   <h2 className="text-base font-bold text-gray-100 mb-1">💼 이번달 영업사원 신규 매출</h2>
                   <p className="text-xs text-gray-400">이번달 | {salesAggregation.reportedSales}명 / {data.salesData.length}명 제출</p>
                 </div>
-                <Link 
+                <Link
                   href="/ae"
                   className="btn-secondary px-4 py-2 rounded-lg text-xs font-semibold"
                 >
@@ -918,7 +919,7 @@ export default function DashboardPage() {
                   const maxValue = Math.max(...calculatedRevenueByChannel.map(c => c.value));
                   const percentage = maxValue > 0 ? (currentMonth / maxValue) * 100 : 0;
 
-                  const channelColors = {
+                  const channelColors: { [key: string]: string } = {
                     '토탈 마케팅': 'from-blue-500 to-cyan-400',
                     '퍼포먼스': 'from-purple-500 to-violet-400',
                     '배달관리': 'from-orange-500 to-amber-400',
@@ -963,7 +964,7 @@ export default function DashboardPage() {
                   const maxValue = Math.max(...calculatedNewClientsByChannel.map(c => c.value));
                   const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
 
-                  const channelColors = {
+                  const channelColors: { [key: string]: string } = {
                     '토탈 마케팅': 'from-blue-400 to-blue-600',
                     '퍼포먼스': 'from-purple-400 to-purple-600',
                     '배달관리': 'from-orange-400 to-orange-600',
