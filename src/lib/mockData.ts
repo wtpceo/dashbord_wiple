@@ -103,6 +103,8 @@ export const generateMockData = (): DashboardData => {
     salesData: [
       { name: '박현수', weeklyReports: [] },
       { name: '박은수', weeklyReports: [] },
+      { name: '김정훈', weeklyReports: [] },
+      { name: '조배호', weeklyReports: [] },
     ],
   };
 };
@@ -186,6 +188,22 @@ export const getDashboardData = async (): Promise<DashboardData> => {
           weeklyReports: []
         });
       }
+
+      const hasKimJungHun = dashboardData.salesData.some(s => s.name === '김정훈');
+      if (!hasKimJungHun) {
+        dashboardData.salesData.push({
+          name: '김정훈',
+          weeklyReports: []
+        });
+      }
+
+      const hasJoBaeHo = dashboardData.salesData.some(s => s.name === '조배호');
+      if (!hasJoBaeHo) {
+        dashboardData.salesData.push({
+          name: '조배호',
+          weeklyReports: []
+        });
+      }
       
       dashboardData.aeData = dashboardData.aeData.map(ae => ({
         ...ae,
@@ -256,6 +274,22 @@ const getDashboardDataFromLocal = (): DashboardData => {
       if (!hasParkEunSoo) {
         parsedData.salesData.push({
           name: '박은수',
+          weeklyReports: []
+        });
+      }
+
+      const hasKimJungHun = parsedData.salesData.some(s => s.name === '김정훈');
+      if (!hasKimJungHun) {
+        parsedData.salesData.push({
+          name: '김정훈',
+          weeklyReports: []
+        });
+      }
+
+      const hasJoBaeHo = parsedData.salesData.some(s => s.name === '조배호');
+      if (!hasJoBaeHo) {
+        parsedData.salesData.push({
+          name: '조배호',
           weeklyReports: []
         });
       }

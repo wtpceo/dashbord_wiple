@@ -120,7 +120,7 @@ body {
 .input-field {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  color: #ffffff !important;
   backdrop-filter: blur(10px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -129,9 +129,20 @@ body {
   outline: none;
   border-color: var(--primary-blue);
   background: rgba(255, 255, 255, 0.05);
+  color: #ffffff !important;
   box-shadow:
     0 0 0 3px rgba(59, 130, 246, 0.1),
     0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+/* Input field number specific */
+input[type="number"].input-field {
+  color: #ffffff !important;
+}
+
+/* Textarea specific */
+textarea.input-field {
+  color: #ffffff !important;
 }
 
 /* Modern gradient buttons */

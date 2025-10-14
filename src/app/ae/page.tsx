@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const aeList: AEName[] = ['이수빈', '최호천', '조아라', '정우진', '김민우', '양주미'];
-const salesList: SalesName[] = ['박현수', '박은수'];
+const salesList: SalesName[] = ['박현수', '박은수', '김정훈', '조배호'];
 
 export default function AELoginPage() {
   const router = useRouter();

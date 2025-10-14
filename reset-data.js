@@ -106,7 +106,9 @@ async function resetData() {
     ],
     salesData: [
       { name: '박현수', weeklyReports: [] },
-      { name: '박은수', weeklyReports: [] }
+      { name: '박은수', weeklyReports: [] },
+      { name: '김정훈', weeklyReports: [] },
+      { name: '조배호', weeklyReports: [] }
     ]
   };
 
@@ -126,7 +128,7 @@ async function resetData() {
       console.log('\n📊 초기화된 데이터:');
       console.log('- 목표 매출: 3억원');
       console.log('- AE: 6명 (이수빈, 최호천, 조아라, 정우진, 김민우, 양주미)');
-      console.log('- 영업사원: 2명 (박현수, 박은수)');
+      console.log('- 영업사원: 4명 (박현수, 박은수, 김정훈, 조배호)');
       console.log('- 지난달 매출: 2.45억원');
       console.log('- 이번달 매출: 2.68억원');
       console.log('\n이제 대시보드를 새로고침하면 데이터가 표시됩니다!');
