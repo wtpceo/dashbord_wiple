@@ -39,15 +39,20 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
     ? (formData.renewedClients / formData.expiringClients) * 100 
     : 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!aeData) return;
+
+    console.log('=== AE 리포트 제출 시작 ===');
+    console.log('현재 formData:', formData);
 
     const newReport: AEWeeklyReport = {
       ...formData,
       renewalRate: parseFloat(renewalRate.toFixed(1)),
     };
+
+    console.log('생성된 리포트:', newReport);
 
     const updatedAeData = data.aeData.map(ae => {
       if (ae.name === aeName) {
@@ -60,6 +65,8 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
           ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
           : [...currentReports, newReport];
 
+        console.log(`${aeName} 업데이트된 리포트 수:`, updatedReports.length);
+
         return {
           ...ae,
           weeklyReports: updatedReports.sort((a, b) => b.week.localeCompare(a.week))
@@ -68,13 +75,22 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
       return ae;
     });
 
-    updateData({
+    const newData = {
       ...data,
       aeData: updatedAeData
-    });
+    };
 
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    console.log('저장할 전체 데이터:', newData);
+
+    try {
+      await updateData(newData);
+      console.log('✅ 데이터 저장 완료');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('❌ 데이터 저장 실패:', error);
+      alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   if (!aeData) {

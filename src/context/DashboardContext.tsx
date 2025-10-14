@@ -36,8 +36,18 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
   // 데이터 업데이트 함수
   const updateData = async (newData: DashboardData) => {
+    console.log('📝 Context updateData 호출됨');
+    console.log('새 데이터:', newData);
+    
     setData(newData);
-    await saveDashboardData(newData);
+    
+    try {
+      await saveDashboardData(newData);
+      console.log('✅ saveDashboardData 완료');
+    } catch (error) {
+      console.error('❌ saveDashboardData 에러:', error);
+      throw error;
+    }
   };
 
   // 데이터 초기화 함수
