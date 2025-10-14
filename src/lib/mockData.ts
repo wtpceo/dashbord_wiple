@@ -1,5 +1,5 @@
 import { DashboardData } from '@/types/dashboard';
-import { supabase } from './supabase';
+import { getSupabaseClient } from './supabase';
 
 const DASHBOARD_ID = 'default';
 
@@ -113,8 +113,11 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     return generateMockData();
   }
 
+  // Supabase 클라이언트 가져오기
+  const supabase = getSupabaseClient();
+  
   // Supabase 설정이 없으면 로컬 스토리지 사용
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!supabase) {
     console.log('Supabase 미설정 - 로컬 스토리지 사용');
     return getDashboardDataFromLocal();
   }
@@ -218,8 +221,11 @@ const getDashboardDataFromLocal = (): DashboardData => {
 
 // Supabase에 데이터 저장
 export const saveDashboardData = async (data: DashboardData): Promise<void> => {
+  // Supabase 클라이언트 가져오기
+  const supabase = getSupabaseClient();
+  
   // Supabase 설정이 없으면 로컬 스토리지에만 저장
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!supabase) {
     console.log('Supabase 미설정 - 로컬 스토리지에 저장');
     if (typeof window !== 'undefined') {
       localStorage.setItem(DASHBOARD_DATA_KEY, JSON.stringify(data));
