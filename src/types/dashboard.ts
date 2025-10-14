@@ -68,13 +68,18 @@ export interface AEWeeklyReport {
   note?: string; // 특이사항
 }
 
+// 매체별 영업사원 리포트 상세 데이터
+export interface SalesChannelReport {
+  channel: MarketingChannel;
+  newClients: number; // 신규 계약 업체 수
+  newRevenue: number; // 신규 계약 매출
+}
+
 // 영업사원 주간 리포트 데이터
 export interface SalesWeeklyReport {
   week: string; // 주차 (예: "2025-W03")
   date: string; // 입력 날짜
-  channel: MarketingChannel; // 신규 계약 매체
-  newClients: number; // 신규 계약 업체 수
-  newRevenue: number; // 신규 계약 매출
+  byChannel: SalesChannelReport[]; // 매체별 리포트
   note?: string; // 특이사항
 }
 

@@ -127,9 +127,12 @@ export default function DashboardPage() {
     const weeklyReports = sales.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
     
-    if (thisWeekReport) {
-      acc.newClients += thisWeekReport.newClients;
-      acc.newRevenue += thisWeekReport.newRevenue;
+    if (thisWeekReport && thisWeekReport.byChannel) {
+      // 매체별 데이터를 합산
+      thisWeekReport.byChannel.forEach(channelReport => {
+        acc.newClients += channelReport.newClients;
+        acc.newRevenue += channelReport.newRevenue;
+      });
       acc.reportedSales += 1;
     }
     
@@ -140,14 +143,37 @@ export default function DashboardPage() {
     reportedSales: 0
   });
 
-  // 영업사원별 이번 주 성과
+  // 영업사원별 이번 주 성과 (매체별 데이터 합산)
   const salesWeeklyPerformance = data.salesData.map(sales => {
     const weeklyReports = sales.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    
+    if (!thisWeekReport || !thisWeekReport.byChannel) {
+      return {
+        name: sales.name,
+        reported: false,
+        newClients: 0,
+        newRevenue: 0,
+        channel: '' as any
+      };
+    }
+
+    // 매체별 데이터를 합산
+    const aggregated = thisWeekReport.byChannel.reduce((sum, ch) => ({
+      newClients: sum.newClients + ch.newClients,
+      newRevenue: sum.newRevenue + ch.newRevenue
+    }), { newClients: 0, newRevenue: 0 });
+
+    // 가장 많은 매출을 발생시킨 매체 찾기
+    const mainChannel = thisWeekReport.byChannel.reduce((prev, current) => 
+      current.newRevenue > prev.newRevenue ? current : prev
+    );
+
     return {
       name: sales.name,
-      reported: !!thisWeekReport,
-      ...thisWeekReport
+      reported: true,
+      ...aggregated,
+      channel: mainChannel.channel
     };
   }).sort((a, b) => {
     if (!a.reported && !b.reported) return 0;
