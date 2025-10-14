@@ -87,7 +87,11 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
       await updateData(newData);
       console.log('✅ 데이터 저장 완료');
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      
+      // 2초 후 대시보드로 자동 이동
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
     } catch (error) {
       console.error('❌ 데이터 저장 실패:', error);
       alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
@@ -123,10 +127,10 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
             </p>
           </div>
           <Link 
-            href="/ae"
+            href="/dashboard"
             className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold"
           >
-            ← AE 선택
+            ← 대시보드로
           </Link>
         </div>
 
@@ -139,6 +143,9 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
               {saved && (
                 <div className="mb-4 p-4 bg-green-500/20 border border-green-400/50 text-green-400 rounded-lg text-sm font-semibold">
                   ✅ 데이터가 성공적으로 저장되었습니다
+                  <div className="mt-2 text-xs text-green-300">
+                    잠시 후 대시보드로 이동합니다...
+                  </div>
                 </div>
               )}
 
