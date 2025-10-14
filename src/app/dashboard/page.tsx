@@ -6,13 +6,27 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { data } = useDashboard();
+  const { data, loading, reloadData } = useDashboard();
   const [mounted, setMounted] = useState(false);
 
   // Hydration 에러 방지: 클라이언트에서만 렌더링
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 데이터 변경 감지 로그
+  useEffect(() => {
+    console.log('🔄 대시보드 데이터 업데이트됨:', data);
+    console.log('📊 AE 리포트 개수:', data.aeData.map(ae => ({
+      name: ae.name,
+      reports: ae.weeklyReports?.length || 0
+    })));
+  }, [data]);
+
+  // 새로고침 핸들러
+  const handleRefresh = async () => {
+    await reloadData();
+  };
 
   // 매출 증가율 계산
   const revenueGrowth = calculateGrowthRate(
@@ -100,6 +114,13 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? '로딩 중...' : '🔄 새로고침'}
+            </button>
             <Link 
               href="/ae"
               className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold"
