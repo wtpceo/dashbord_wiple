@@ -74,6 +74,21 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // 폴링 방식으로 주기적으로 데이터 새로고침 (10초마다)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const loadedData = await getDashboardData();
+        setData(loadedData);
+        console.log('🔄 데이터 자동 새로고침 (10초)');
+      } catch (error) {
+        console.error('자동 새로고침 실패:', error);
+      }
+    }, 10000); // 10초마다 새로고침
+
+    return () => clearInterval(interval);
+  }, []);
+
   // 데이터 업데이트 함수
   const updateData = async (newData: DashboardData) => {
     console.log('📝 Context updateData 호출됨');
