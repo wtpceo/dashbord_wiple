@@ -34,15 +34,11 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
   
   const [aeNote, setAeNote] = useState<string>('');
 
-  // 영업사원 리포트 폼
-  const [salesFormData, setSalesFormData] = useState<SalesWeeklyReport>({
-    week: getCurrentWeek(),
-    date: formatDate(new Date()),
-    channel: '토탈 마케팅',
-    newClients: 0,
-    newRevenue: 0,
-    note: '',
-  });
+  // 영업사원 리포트 폼 - 현재 선택된 매체와 데이터
+  const [selectedChannel, setSelectedChannel] = useState<MarketingChannel>('토탈 마케팅');
+  const [salesNewClients, setSalesNewClients] = useState<number>(0);
+  const [salesNewRevenue, setSalesNewRevenue] = useState<number>(0);
+  const [salesNote, setSalesNote] = useState<string>('');
 
   useEffect(() => {
     if (aeData && aeData.weeklyReports && aeData.weeklyReports.length > 0) {
@@ -130,13 +126,24 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
     e.preventDefault();
     if (!salesData) return;
 
+    const newReport: SalesWeeklyReport = {
+      week: getCurrentWeek(),
+      date: formatDate(new Date()),
+      byChannel: [{
+        channel: selectedChannel,
+        newClients: salesNewClients,
+        newRevenue: salesNewRevenue
+      }],
+      note: salesNote
+    };
+
     const updatedSalesData = data.salesData.map(s => {
       if (s.name === personName) {
         const currentReports = s.weeklyReports || [];
-        const existingIndex = currentReports.findIndex(r => r.week === salesFormData.week);
+        const existingIndex = currentReports.findIndex(r => r.week === newReport.week);
         const updatedReports = existingIndex >= 0
-          ? currentReports.map((r, i) => i === existingIndex ? salesFormData : r)
-          : [...currentReports, salesFormData];
+          ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
+          : [...currentReports, newReport];
 
         return {
           ...s,
@@ -189,7 +196,7 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                 💼 {personName} 주간 리포트
               </h1>
               <p className="text-sm text-gray-400">
-                {salesFormData.week} | {salesFormData.date} | 영업사원 (신규 담당)
+                {getCurrentWeek()} | {formatDate(new Date())} | 영업사원 (신규 담당)
               </p>
             </div>
             <Link 
@@ -228,8 +235,8 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                       신규 계약 매체
                     </label>
                     <select
-                      value={salesFormData.channel}
-                      onChange={(e) => setSalesFormData({ ...salesFormData, channel: e.target.value as MarketingChannel })}
+                      value={selectedChannel}
+                      onChange={(e) => setSelectedChannel(e.target.value as MarketingChannel)}
                       className="input-field w-full px-4 py-3 rounded-lg text-gray-100 text-lg"
                       required
                     >
@@ -250,8 +257,8 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                       type="number"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      value={salesFormData.newClients}
-                      onChange={(e) => setSalesFormData({ ...salesFormData, newClients: parseInt(e.target.value) || 0 })}
+                      value={salesNewClients}
+                      onChange={(e) => setSalesNewClients(parseInt(e.target.value) || 0)}
                       className="input-field w-full px-4 py-3 rounded-lg text-gray-100 number-display text-lg"
                       required
                       min="0"
@@ -268,8 +275,8 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                       type="number"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      value={salesFormData.newRevenue}
-                      onChange={(e) => setSalesFormData({ ...salesFormData, newRevenue: parseInt(e.target.value) || 0 })}
+                      value={salesNewRevenue}
+                      onChange={(e) => setSalesNewRevenue(parseInt(e.target.value) || 0)}
                       className="input-field w-full px-4 py-3 rounded-lg text-gray-100 number-display text-lg"
                       required
                       min="0"
@@ -285,8 +292,8 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                       특이사항 (선택)
                     </label>
                     <textarea
-                      value={salesFormData.note}
-                      onChange={(e) => setSalesFormData({ ...salesFormData, note: e.target.value })}
+                      value={salesNote}
+                      onChange={(e) => setSalesNote(e.target.value)}
                       className="input-field w-full px-4 py-3 rounded-lg text-gray-100 h-24 resize-none"
                       placeholder="특이사항이나 메모를 입력하세요..."
                     />
@@ -311,16 +318,16 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-gray-800/50">
                     <span className="text-sm text-gray-400">매체</span>
-                    <span className="text-lg font-bold text-cyan-400">{salesFormData.channel}</span>
+                    <span className="text-lg font-bold text-cyan-400">{selectedChannel}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-gray-800/50">
                     <span className="text-sm text-gray-400">신규 계약</span>
-                    <span className="text-lg font-bold text-green-400 number-display">{salesFormData.newClients}</span>
+                    <span className="text-lg font-bold text-green-400 number-display">{salesNewClients}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-sm text-gray-400">신규 매출</span>
                     <span className="text-lg font-bold text-blue-400 number-display">
-                      {salesFormData.newRevenue.toLocaleString()}원
+                      {salesNewRevenue.toLocaleString()}원
                     </span>
                   </div>
                 </div>
@@ -340,20 +347,24 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                           <div className="text-xs text-gray-500">{report.date}</div>
                         </div>
                         <div className="space-y-2">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">매체</span>
-                            <span className="font-semibold text-cyan-400">{(report as SalesWeeklyReport).channel}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">신규 계약</span>
-                            <span className="font-semibold text-green-400">{(report as SalesWeeklyReport).newClients}개</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">신규 매출</span>
-                            <span className="font-semibold text-blue-400">
-                              {((report as SalesWeeklyReport).newRevenue || 0).toLocaleString()}원
-                            </span>
-                          </div>
+                          {(report as SalesWeeklyReport).byChannel?.map((ch, chIndex) => (
+                            <div key={chIndex}>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">매체</span>
+                                <span className="font-semibold text-cyan-400">{ch.channel}</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">신규 계약</span>
+                                <span className="font-semibold text-green-400">{ch.newClients}개</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">신규 매출</span>
+                                <span className="font-semibold text-blue-400">
+                                  {(ch.newRevenue || 0).toLocaleString()}원
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}

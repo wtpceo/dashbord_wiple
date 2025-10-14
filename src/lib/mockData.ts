@@ -159,10 +159,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
         });
       }
       
-      // 박현수, 박은수를 aeData에서 제거하고 salesData로 이동
-      dashboardData.aeData = dashboardData.aeData.filter(ae => 
-        ae.name !== '박현수' && ae.name !== '박은수'
-      );
+      // AE 데이터는 그대로 유지 (박현수, 박은수는 이미 영업사원으로 정의됨)
       
       // salesData 초기화
       if (!dashboardData.salesData) {
@@ -235,10 +232,7 @@ const getDashboardDataFromLocal = (): DashboardData => {
         });
       }
       
-      // 박현수, 박은수를 aeData에서 제거하고 salesData로 이동
-      parsedData.aeData = parsedData.aeData.filter(ae => 
-        ae.name !== '박현수' && ae.name !== '박은수'
-      );
+      // AE 데이터는 그대로 유지 (박현수, 박은수는 이미 영업사원으로 정의됨)
       
       // salesData 초기화
       if (!parsedData.salesData) {
