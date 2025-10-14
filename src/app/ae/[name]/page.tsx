@@ -23,6 +23,7 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
     totalClients: aeData?.clientCount || 0,
     expiringClients: 0,
     renewedClients: 0,
+    renewalRevenue: 0,
     note: '',
   });
 
@@ -211,6 +212,25 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                   <p className="text-xs text-gray-500 mt-1">종료 예정 업체 중 연장에 성공한 업체 수</p>
                 </div>
 
+                {/* 이번달 연장 매출 */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    이번달 연장 매출 (원)
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={formData.renewalRevenue || 0}
+                    onChange={(e) => setFormData({ ...formData, renewalRevenue: parseInt(e.target.value) || 0 })}
+                    className="input-field w-full px-4 py-3 rounded-lg text-gray-100 number-display text-lg"
+                    min="0"
+                    step="1000000"
+                    placeholder="예: 50000000"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">연장에 성공한 업체들의 이번달 총 매출</p>
+                </div>
+
                 {/* 연장율 자동 계산 */}
                 <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
                   <div className="text-xs text-gray-400 mb-1">연장율 (자동 계산)</div>
@@ -261,6 +281,12 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                   <span className="text-sm text-gray-400">연장 성공</span>
                   <span className="text-lg font-bold text-green-400 number-display">{formData.renewedClients}</span>
                 </div>
+                <div className="flex justify-between py-2 border-b border-gray-800/50">
+                  <span className="text-sm text-gray-400">연장 매출</span>
+                  <span className="text-lg font-bold text-blue-400 number-display">
+                    {(formData.renewalRevenue || 0).toLocaleString()}원
+                  </span>
+                </div>
                 <div className="flex justify-between py-2">
                   <span className="text-sm text-gray-400">연장율</span>
                   <span className="text-lg font-bold text-green-400 number-display">{renewalRate.toFixed(1)}%</span>
@@ -281,7 +307,7 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                         <div className="text-sm font-semibold text-gray-300">{report.week}</div>
                         <div className="text-xs text-gray-500">{report.date}</div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="grid grid-cols-3 gap-2 text-xs mb-2">
                         <div>
                           <div className="text-gray-500">담당</div>
                           <div className="font-semibold text-gray-200">{report.totalClients}</div>
@@ -295,7 +321,15 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
                           <div className="font-semibold text-green-400">{report.renewedClients}</div>
                         </div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-700/50">
+                      {report.renewalRevenue && report.renewalRevenue > 0 && (
+                        <div className="mb-2 pb-2 border-b border-gray-700/50">
+                          <span className="text-xs text-gray-500">연장 매출: </span>
+                          <span className="text-sm font-bold text-blue-400">
+                            {report.renewalRevenue.toLocaleString()}원
+                          </span>
+                        </div>
+                      )}
+                      <div className="pt-2 border-t border-gray-700/50">
                         <span className="text-xs text-gray-500">연장율: </span>
                         <span className="text-sm font-bold text-green-400">{report.renewalRate}%</span>
                       </div>

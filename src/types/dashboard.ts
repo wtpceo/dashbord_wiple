@@ -55,6 +55,7 @@ export interface AEWeeklyReport {
   expiringClients: number; // 이번주 종료 예정 업체 수
   renewedClients: number; // 연장 성공 업체 수
   renewalRate: number; // 연장율 (자동 계산)
+  renewalRevenue?: number; // 이번달 연장 매출
   note?: string; // 특이사항
 }
 
