@@ -100,6 +100,10 @@ export const generateMockData = (): DashboardData => {
       { name: '김민우', clientCount: 28, weeklyReports: [] },
       { name: '양주미', clientCount: 27, weeklyReports: [] },
     ],
+    salesData: [
+      { name: '박현수', weeklyReports: [] },
+      { name: '박은수', weeklyReports: [] },
+    ],
   };
 };
 
@@ -155,9 +159,40 @@ export const getDashboardData = async (): Promise<DashboardData> => {
         });
       }
       
+      // 박현수, 박은수를 aeData에서 제거하고 salesData로 이동
+      dashboardData.aeData = dashboardData.aeData.filter(ae => 
+        ae.name !== '박현수' && ae.name !== '박은수'
+      );
+      
+      // salesData 초기화
+      if (!dashboardData.salesData) {
+        dashboardData.salesData = [];
+      }
+      
+      const hasParkHyunSoo = dashboardData.salesData.some(s => s.name === '박현수');
+      if (!hasParkHyunSoo) {
+        dashboardData.salesData.push({
+          name: '박현수',
+          weeklyReports: []
+        });
+      }
+      
+      const hasParkEunSoo = dashboardData.salesData.some(s => s.name === '박은수');
+      if (!hasParkEunSoo) {
+        dashboardData.salesData.push({
+          name: '박은수',
+          weeklyReports: []
+        });
+      }
+      
       dashboardData.aeData = dashboardData.aeData.map(ae => ({
         ...ae,
         weeklyReports: ae.weeklyReports || []
+      }));
+      
+      dashboardData.salesData = dashboardData.salesData.map(s => ({
+        ...s,
+        weeklyReports: s.weeklyReports || []
       }));
       
       return dashboardData;
@@ -200,9 +235,40 @@ const getDashboardDataFromLocal = (): DashboardData => {
         });
       }
       
+      // 박현수, 박은수를 aeData에서 제거하고 salesData로 이동
+      parsedData.aeData = parsedData.aeData.filter(ae => 
+        ae.name !== '박현수' && ae.name !== '박은수'
+      );
+      
+      // salesData 초기화
+      if (!parsedData.salesData) {
+        parsedData.salesData = [];
+      }
+      
+      const hasParkHyunSoo = parsedData.salesData.some(s => s.name === '박현수');
+      if (!hasParkHyunSoo) {
+        parsedData.salesData.push({
+          name: '박현수',
+          weeklyReports: []
+        });
+      }
+      
+      const hasParkEunSoo = parsedData.salesData.some(s => s.name === '박은수');
+      if (!hasParkEunSoo) {
+        parsedData.salesData.push({
+          name: '박은수',
+          weeklyReports: []
+        });
+      }
+      
       parsedData.aeData = parsedData.aeData.map(ae => ({
         ...ae,
         weeklyReports: ae.weeklyReports || []
+      }));
+      
+      parsedData.salesData = parsedData.salesData.map(s => ({
+        ...s,
+        weeklyReports: s.weeklyReports || []
       }));
       
       localStorage.setItem(DASHBOARD_DATA_KEY, JSON.stringify(parsedData));

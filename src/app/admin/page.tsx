@@ -6,7 +6,7 @@ import { DashboardData, MarketingChannel, AEName } from '@/types/dashboard';
 import Link from 'next/link';
 
 const channels: MarketingChannel[] = ['토탈 마케팅', '퍼포먼스', '배달관리', '브랜드블로그'];
-const aeNames: AEName[] = ['이수빈', '최호천', '조아라', '정우진', '김민우', '양주미'];
+const aeNames: AEName[] = ['이수빈', '최호천', '조아라', '정우진', '김민우', '양주미', '박현수', '박은수'];
 
 export default function AdminPage() {
   const { data, updateData, resetData } = useDashboard();

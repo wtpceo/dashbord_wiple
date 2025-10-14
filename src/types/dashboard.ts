@@ -4,6 +4,9 @@ export type MarketingChannel = '토탈 마케팅' | '퍼포먼스' | '배달관�
 // AE 이름 타입
 export type AEName = '이수빈' | '최호천' | '조아라' | '정우진' | '김민우' | '양주미';
 
+// 영업사원 이름 타입
+export type SalesName = '박현수' | '박은수';
+
 // 매체별 데이터 인터페이스
 export interface ChannelData {
   channel: MarketingChannel;
@@ -59,11 +62,26 @@ export interface AEWeeklyReport {
   note?: string; // 특이사항
 }
 
+// 영업사원 주간 리포트 데이터
+export interface SalesWeeklyReport {
+  week: string; // 주차 (예: "2025-W03")
+  date: string; // 입력 날짜
+  newClients: number; // 신규 계약 업체 수
+  newRevenue: number; // 신규 계약 매출
+  note?: string; // 특이사항
+}
+
 // AE별 담당 광고주 데이터
 export interface AEClientData {
   name: AEName;
   clientCount: number; // 담당 광고주 수
   weeklyReports: AEWeeklyReport[]; // 주간 리포트 배열
+}
+
+// 영업사원 데이터
+export interface SalesData {
+  name: SalesName;
+  weeklyReports: SalesWeeklyReport[]; // 주간 리포트 배열
 }
 
 // 전체 대시보드 데이터
@@ -92,4 +110,7 @@ export interface DashboardData {
   
   // AE별 데이터
   aeData: AEClientData[]; // AE별 담당 광고주 수
+  
+  // 영업사원 데이터
+  salesData: SalesData[]; // 영업사원별 신규 매출
 }
