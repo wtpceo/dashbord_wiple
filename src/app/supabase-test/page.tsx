@@ -222,14 +222,14 @@ GRANT ALL ON dashboard_data TO anon, authenticated;
             <CardTitle className="text-blue-400">Setup Instructions</CardTitle>
           </CardHeader>
           <CardContent className="text-white space-y-4">
-            <p>If the table doesn't exist, follow these steps:</p>
+            <p>If the table doesn&apos;t exist, follow these steps:</p>
             <ol className="list-decimal list-inside space-y-2">
               <li>Go to your Supabase Dashboard: https://supabase.com/dashboard</li>
               <li>Select your project (bdtacmmrytxanjfzahug)</li>
-              <li>Click on "SQL Editor" in the left sidebar</li>
+              <li>Click on &quot;SQL Editor&quot; in the left sidebar</li>
               <li>Copy the contents of /supabase_setup.sql file</li>
-              <li>Paste it in the SQL editor and click "Run"</li>
-              <li>Come back here and click "Re-check Connection"</li>
+              <li>Paste it in the SQL editor and click &quot;Run&quot;</li>
+              <li>Come back here and click &quot;Re-check Connection&quot;</li>
             </ol>
 
             <p className="mt-4 text-yellow-400">
