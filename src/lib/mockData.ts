@@ -300,25 +300,49 @@ export const saveDashboardData = async (data: DashboardData): Promise<void> => {
 
   try {
     console.log('Supabase에 데이터 저장 시도...');
-    const { error } = await supabase
+    console.log('저장할 데이터 크기:', JSON.stringify(data).length, 'bytes');
+
+    const { data: result, error } = await supabase
       .from('dashboard_data')
       .upsert({
         id: DASHBOARD_ID,
         data: data,
         updated_at: new Date().toISOString()
-      });
+      })
+      .select();
 
     if (error) {
       console.error('❌ Supabase 저장 실패:', error);
-      console.error('에러 상세:', error.message, error.code);
+      console.error('에러 타입:', typeof error);
+      console.error('에러 상세:', {
+        message: error.message || '메시지 없음',
+        code: error.code || '코드 없음',
+        details: error.details || '상세 없음',
+        hint: error.hint || '힌트 없음',
+        fullError: JSON.stringify(error, null, 2)
+      });
+
+      // RLS 정책 문제인지 확인
+      if (error.code === '42501' || error.message?.includes('policy')) {
+        console.error('⚠️ RLS 정책 문제일 가능성이 있습니다.');
+        console.error('해결 방법: Supabase 대시보드에서 RLS 정책을 확인하세요.');
+      }
       // 에러를 throw하지 않고 콘솔에만 기록
     } else {
       console.log('✅ Supabase에 데이터 저장 성공!');
       console.log('저장된 AE 수:', data.aeData.length);
       console.log('저장된 Sales 수:', data.salesData.length);
+      if (result && result.length > 0) {
+        console.log('저장 결과:', result[0].id, '- 업데이트 시간:', result[0].updated_at);
+      }
     }
   } catch (error) {
     console.error('❌ Supabase 연결 에러:', error);
+    console.error('에러 타입:', typeof error);
+    if (error instanceof Error) {
+      console.error('에러 메시지:', error.message);
+      console.error('스택:', error.stack);
+    }
     // 에러를 throw하지 않음
   }
 };

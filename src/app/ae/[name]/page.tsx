@@ -106,90 +106,118 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
   // AE 리포트 제출
   const handleAESubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!aeData) return;
-
-    const newReport: AEWeeklyReport = {
-      week: getCurrentWeek(),
-      date: formatDate(new Date()),
-      byChannel: aeChannelData.map(item => ({
-        ...item,
-        renewalRate: parseFloat(item.renewalRate.toFixed(1))
-      })),
-      note: aeNote,
-    };
-
-    const updatedAeData = data.aeData.map(ae => {
-      if (ae.name === personName) {
-        const currentReports = ae.weeklyReports || [];
-        const existingIndex = currentReports.findIndex(r => r.week === newReport.week);
-        const updatedReports = existingIndex >= 0
-          ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
-          : [...currentReports, newReport];
-
-        return {
-          ...ae,
-          clientCount: totalAEClients, // 전체 담당 업체 수 업데이트
-          weeklyReports: updatedReports.sort((a, b) => b.week.localeCompare(a.week))
-        };
-      }
-      return ae;
-    });
 
     try {
+      if (!aeData) {
+        console.error('AE 데이터가 없습니다');
+        alert('AE 데이터를 찾을 수 없습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      const newReport: AEWeeklyReport = {
+        week: getCurrentWeek(),
+        date: formatDate(new Date()),
+        byChannel: aeChannelData.map(item => ({
+          ...item,
+          renewalRate: parseFloat(item.renewalRate.toFixed(1))
+        })),
+        note: aeNote,
+      };
+
+      console.log('📝 제출할 리포트:', newReport);
+
+      const updatedAeData = data.aeData.map(ae => {
+        if (ae.name === personName) {
+          const currentReports = ae.weeklyReports || [];
+          const existingIndex = currentReports.findIndex(r => r.week === newReport.week);
+          const updatedReports = existingIndex >= 0
+            ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
+            : [...currentReports, newReport];
+
+          return {
+            ...ae,
+            clientCount: totalAEClients, // 전체 담당 업체 수 업데이트
+            weeklyReports: updatedReports.sort((a, b) => b.week.localeCompare(a.week))
+          };
+        }
+        return ae;
+      });
+
+      console.log('📝 업데이트할 AE 데이터:', updatedAeData);
+
       await updateData({
         ...data,
         aeData: updatedAeData
       });
+
       setSaved(true);
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 2000);
     } catch (error) {
-      console.error('❌ 데이터 저장 실패:', error);
-      alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+      console.error('❌ 데이터 저장 실패 - 상세 에러:', error);
+      if (error instanceof Error) {
+        alert(`데이터 저장에 실패했습니다: ${error.message}`);
+      } else {
+        alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+      }
     }
   };
 
   // 영업사원 리포트 제출
   const handleSalesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!salesData) return;
-
-    const newReport: SalesWeeklyReport = {
-      week: getCurrentWeek(),
-      date: formatDate(new Date()),
-      byChannel: salesChannelData.map(item => ({ ...item })),
-      note: salesNote,
-    };
-
-    const updatedSalesData = data.salesData.map(s => {
-      if (s.name === personName) {
-        const currentReports = s.weeklyReports || [];
-        const existingIndex = currentReports.findIndex(r => r.week === newReport.week);
-        const updatedReports = existingIndex >= 0
-          ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
-          : [...currentReports, newReport];
-
-        return {
-          ...s,
-          weeklyReports: updatedReports.sort((a, b) => b.week.localeCompare(a.week))
-        };
-      }
-      return s;
-    });
 
     try {
+      if (!salesData) {
+        console.error('영업사원 데이터가 없습니다');
+        alert('영업사원 데이터를 찾을 수 없습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      const newReport: SalesWeeklyReport = {
+        week: getCurrentWeek(),
+        date: formatDate(new Date()),
+        byChannel: salesChannelData.map(item => ({ ...item })),
+        note: salesNote,
+      };
+
+      console.log('📝 제출할 영업 리포트:', newReport);
+
+      const updatedSalesData = data.salesData.map(s => {
+        if (s.name === personName) {
+          const currentReports = s.weeklyReports || [];
+          const existingIndex = currentReports.findIndex(r => r.week === newReport.week);
+          const updatedReports = existingIndex >= 0
+            ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
+            : [...currentReports, newReport];
+
+          return {
+            ...s,
+            weeklyReports: updatedReports.sort((a, b) => b.week.localeCompare(a.week))
+          };
+        }
+        return s;
+      });
+
+      console.log('📝 업데이트할 영업사원 데이터:', updatedSalesData);
+
       await updateData({
         ...data,
         salesData: updatedSalesData
       });
+
       setSaved(true);
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 2000);
     } catch (error) {
-      console.error('❌ 데이터 저장 실패:', error);
-      alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+      console.error('❌ 데이터 저장 실패 - 상세 에러:', error);
+      if (error instanceof Error) {
+        alert(`데이터 저장에 실패했습니다: ${error.message}`);
+      } else {
+        alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+      }
     }
   };
 

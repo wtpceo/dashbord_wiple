@@ -1,11 +1,11 @@
 // 마케팅 매체 타입
 export type MarketingChannel = '토탈 마케팅' | '퍼포먼스' | '배달관리' | '브랜드블로그';
 
-// AE 이름 타입
-export type AEName = '이수빈' | '최호천' | '조아라' | '정우진' | '김민우' | '양주미';
+// AE 이름 타입 - 더 유연하게 string으로 변경
+export type AEName = string;
 
-// 영업사원 이름 타입
-export type SalesName = '박현수' | '박은수';
+// 영업사원 이름 타입 - 더 유연하게 string으로 변경
+export type SalesName = string;
 
 // 매체별 데이터 인터페이스
 export interface ChannelData {
