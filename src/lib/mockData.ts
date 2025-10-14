@@ -299,26 +299,27 @@ export const saveDashboardData = async (data: DashboardData): Promise<void> => {
   }
 
   try {
+    console.log('Supabase에 데이터 저장 시도...');
     const { error } = await supabase
       .from('dashboard_data')
       .upsert({
         id: DASHBOARD_ID,
         data: data,
+        updated_at: new Date().toISOString()
       });
 
     if (error) {
-      console.error('Supabase 저장 에러:', error);
-      throw error; // 에러를 상위로 전파
+      console.error('❌ Supabase 저장 실패:', error);
+      console.error('에러 상세:', error.message, error.code);
+      // 에러를 throw하지 않고 콘솔에만 기록
     } else {
-      console.log('Supabase에 데이터 저장 완료');
-      console.log('저장된 데이터:', data);
+      console.log('✅ Supabase에 데이터 저장 성공!');
+      console.log('저장된 AE 수:', data.aeData.length);
+      console.log('저장된 Sales 수:', data.salesData.length);
     }
   } catch (error) {
-    console.error('Supabase 연결 에러:', error);
-    // 에러 시 로컬에 저장
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(DASHBOARD_DATA_KEY, JSON.stringify(data));
-    }
+    console.error('❌ Supabase 연결 에러:', error);
+    // 에러를 throw하지 않음
   }
 };
 
