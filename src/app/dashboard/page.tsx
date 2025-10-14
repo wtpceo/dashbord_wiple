@@ -28,9 +28,10 @@ export default function DashboardPage() {
     await reloadData();
   };
 
-  // 임시로 data에서 가져온 후 나중에 계산된 값으로 대체 예정
+  // 지난달 매출 데이터는 실제로 저장된 데이터를 사용하고,
+  // 현재달 매출은 실제 리포트에서 계산
   let tempLastMonthRevenue = data.lastMonthRevenue.total;
-  let tempCurrentMonthRevenue = 0;  // 계산된 값으로 대체될 것
+  let tempCurrentMonthRevenue = 0;  // 실제 데이터에서 계산될 것
 
   // AE 데이터 집계 함수
   const getCurrentWeekFromDate = () => {
@@ -176,21 +177,73 @@ export default function DashboardPage() {
   });
 
   // ============================================
-  // 📊 실제 데이터 기반 계산
+  // 📊 실제 데이터 기반 계산 (이번 달 전체 집계)
   // ============================================
-  
+
+  // 이번 달의 모든 주차 데이터 집계를 위한 함수
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const currentMonth = getCurrentMonth();
+
+  // 이번 달 전체 AE 데이터 집계
+  const monthlyAEAggregation = data.aeData.reduce((acc, ae) => {
+    const weeklyReports = ae.weeklyReports || [];
+    // 이번 달의 모든 주차 리포트 집계
+    weeklyReports.forEach(report => {
+      if (report.week && report.week.startsWith(currentMonth.substring(0, 7))) {
+        if (report.byChannel) {
+          report.byChannel.forEach(channelReport => {
+            acc.totalClients = Math.max(acc.totalClients, channelReport.totalClients || 0);
+            acc.expiringClients += channelReport.expiringClients || 0;
+            acc.renewedClients += channelReport.renewedClients || 0;
+            acc.renewalRevenue += channelReport.renewalRevenue || 0;
+          });
+        }
+      }
+    });
+    return acc;
+  }, {
+    totalClients: 0,
+    expiringClients: 0,
+    renewedClients: 0,
+    renewalRevenue: 0
+  });
+
+  // 이번 달 전체 영업사원 데이터 집계
+  const monthlySalesAggregation = data.salesData.reduce((acc, sales) => {
+    const weeklyReports = sales.weeklyReports || [];
+    // 이번 달의 모든 주차 리포트 집계
+    weeklyReports.forEach(report => {
+      if (report.week && report.week.startsWith(currentMonth.substring(0, 7))) {
+        if (report.byChannel) {
+          report.byChannel.forEach(channelReport => {
+            acc.newClients += channelReport.newClients || 0;
+            acc.newRevenue += channelReport.newRevenue || 0;
+          });
+        }
+      }
+    });
+    return acc;
+  }, {
+    newClients: 0,
+    newRevenue: 0
+  });
+
   // 1. 이번달 신규 매출 = 모든 영업사원들의 매출의 합
-  const calculatedNewRevenue = salesAggregation.newRevenue;
-  
+  const calculatedNewRevenue = monthlySalesAggregation.newRevenue || salesAggregation.newRevenue;
+
   // 2. 이번달 연장 매출 = AE들의 연장 매출의 합
-  const calculatedRenewalRevenue = weeklyAggregation.renewalRevenue;
-  
+  const calculatedRenewalRevenue = monthlyAEAggregation.renewalRevenue || weeklyAggregation.renewalRevenue;
+
   // 3. 이번달 총 매출 = 신규 매출 + 연장 매출
   const calculatedTotalRevenue = calculatedNewRevenue + calculatedRenewalRevenue;
-  
-  // 4. 총 광고주 = AE들이 가지고 있는 광고주의 합
-  const calculatedTotalClients = weeklyAggregation.totalClients;
-  
+
+  // 4. 총 광고주 = AE들이 가지고 있는 광고주의 합 (가장 최근 리포트 기준)
+  const calculatedTotalClients = weeklyAggregation.totalClients || monthlyAEAggregation.totalClients;
+
   // 5. 매체별 매출 현황 = 영업사원과 AE들의 매체별 매출의 합
   const calculatedRevenueByChannel = (() => {
     const channels: { [key: string]: number } = {
@@ -239,6 +292,32 @@ export default function DashboardPage() {
   
   // 8. 신규 광고주 = 영업사원들의 광고주 합
   const calculatedNewClients = salesAggregation.newClients;
+  
+  // 8-1. 매체별 신규 광고주 수
+  const calculatedNewClientsByChannel = (() => {
+    const channels: { [key: string]: number } = {
+      '토탈 마케팅': 0,
+      '퍼포먼스': 0,
+      '배달관리': 0,
+      '브랜드블로그': 0
+    };
+    
+    // 영업사원 신규 계약 집계
+    data.salesData.forEach(sales => {
+      const weeklyReports = sales.weeklyReports || [];
+      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+      if (thisWeekReport && thisWeekReport.byChannel) {
+        thisWeekReport.byChannel.forEach(ch => {
+          channels[ch.channel] = (channels[ch.channel] || 0) + ch.newClients;
+        });
+      }
+    });
+    
+    return Object.entries(channels).map(([channel, value]) => ({
+      channel: channel as any,
+      value
+    }));
+  })();
   
   // 9. 매체별 광고주 수
   const calculatedClientsByChannel = (() => {
@@ -290,12 +369,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1419]">
+    <div className="min-h-screen">
       <div className="container mx-auto px-6 py-6">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-100 mb-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-2">
               위플 대시보드
             </h1>
             <p className="text-sm text-gray-400">
@@ -326,100 +405,158 @@ export default function DashboardPage() {
         </div>
 
         {/* 최상단 KPI: 목표 매출 + 신규 매출 + 연장 매출 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* 목표 매출 달성률 */}
-          <div className="card-elevated rounded-lg p-6">
-            <div className="text-xs font-medium text-gray-400 mb-2">🎯 이번달 목표 달성률</div>
-            <div className="text-4xl font-bold text-gray-100 number-display mb-3">
-              {achievementRate.toFixed(1)}%
+          <div className="gradient-border card-elevated rounded-2xl p-6 group hover:scale-[1.02] transition-transform duration-300">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">🎯</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">이번달 목표 달성률</span>
             </div>
-            
+            <div className="text-5xl font-bold mb-4">
+              <span className="number-display">{achievementRate.toFixed(1)}</span>
+              <span className="text-2xl text-gray-400 ml-1">%</span>
+            </div>
+
             {/* 게이지 바 */}
-            <div className="relative mb-3">
-              <div className="w-full h-6 bg-gray-800/50 rounded-full overflow-hidden border border-gray-700/50">
-                <div 
-                  className={`h-full transition-all duration-1000 ease-out ${
-                    achievementRate >= 100 
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+            <div className="relative mb-4">
+              <div className="w-full h-8 bg-black/40 rounded-full overflow-hidden backdrop-blur-sm">
+                <div
+                  className={`h-full transition-all duration-1000 ease-out relative ${
+                    achievementRate >= 100
+                      ? 'bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400'
                       : achievementRate >= 80
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
+                        ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-400'
                         : achievementRate >= 60
-                          ? 'bg-gradient-to-r from-yellow-500 to-orange-400'
-                          : 'bg-gradient-to-r from-red-500 to-pink-400'
-                  }`}
+                          ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-amber-400'
+                          : 'bg-gradient-to-r from-red-400 via-red-500 to-pink-400'
+                  } gradient-animation`}
                   style={{ width: `${Math.min(achievementRate, 100)}%` }}
-                ></div>
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
               </div>
             </div>
-            
+
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">목표: {formatCurrency(data.targetRevenue)}</span>
-              <span className="text-blue-400 font-semibold">{formatCurrency(calculatedTotalRevenue)}</span>
+              <span className="text-gray-500">목표</span>
+              <span className="text-white font-semibold">{formatCurrency(data.targetRevenue)}</span>
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-gray-500">현재</span>
+              <span className="text-blue-400 font-bold">{formatCurrency(calculatedTotalRevenue)}</span>
             </div>
           </div>
 
           {/* 이번달 신규 매출 */}
-          <div className="card-elevated rounded-lg p-6">
-            <div className="text-xs font-medium text-gray-400 mb-2">💼 이번달 신규 매출</div>
-            <div className="text-4xl font-bold text-green-400 mb-3 number-display">
-              {formatCurrency(calculatedNewRevenue)}
+          <div className="data-card card-elevated rounded-2xl p-6 group hover:scale-[1.02] transition-transform duration-300">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                <span className="text-xl">💰</span>
+              </div>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">신규 매출</span>
             </div>
-            <div className="text-xs text-gray-500">
-              신규 계약 {calculatedNewClients}개
+            <div className="text-5xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                {formatCurrency(calculatedNewRevenue)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-semibold">
+                +{calculatedNewClients}개
+              </span>
+              <span className="text-xs text-gray-500">신규 계약</span>
             </div>
           </div>
 
           {/* 이번달 연장 매출 */}
-          <div className="card-elevated rounded-lg p-6">
-            <div className="text-xs font-medium text-gray-400 mb-2">🔄 이번달 연장 매출</div>
-            <div className="text-4xl font-bold text-purple-400 mb-3 number-display">
-              {formatCurrency(calculatedRenewalRevenue)}
+          <div className="data-card card-elevated rounded-2xl p-6 group hover:scale-[1.02] transition-transform duration-300">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center">
+                <span className="text-xl">🔄</span>
+              </div>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">연장 매출</span>
             </div>
-            <div className="text-xs text-gray-500">
-              연장 성공 {calculatedRenewedClients}개 ({calculatedRenewalRate.toFixed(1)}%)
+            <div className="text-5xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
+                {formatCurrency(calculatedRenewalRevenue)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold">
+                {calculatedRenewalRate.toFixed(1)}%
+              </span>
+              <span className="text-xs text-gray-500">연장 성공 {calculatedRenewedClients}개</span>
             </div>
           </div>
         </div>
 
         {/* 매출 비교 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* 지난달 총 매출 */}
-          <div className="card-elevated rounded-lg p-5">
-            <div className="text-xs font-medium text-gray-400 mb-2">지난달 총 매출</div>
-            <div className="text-3xl font-bold text-gray-100 mb-1 number-display">
-              {formatCurrency(tempLastMonthRevenue)}
+          <div className="card-elevated rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-500/10 to-transparent rounded-full blur-2xl"></div>
+            <div className="relative">
+              <div className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wider">지난달 총 매출</div>
+              <div className="text-4xl font-bold mb-2">
+                <span className="number-display">{formatCurrency(tempLastMonthRevenue)}</span>
+              </div>
+              <div className="text-xs text-gray-500">전월 실적 기준</div>
             </div>
-            <div className="text-xs text-gray-500">전월 실적</div>
           </div>
 
           {/* 이번달 총 매출 */}
-          <div className="card-elevated rounded-lg p-5">
-            <div className="text-xs font-medium text-gray-400 mb-2">이번달 총 매출</div>
-            <div className="text-3xl font-bold text-blue-400 mb-1 number-display">
-              {formatCurrency(calculatedTotalRevenue)}
-            </div>
-            <div className={`text-xs font-semibold ${revenueGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {revenueGrowth > 0 ? '▲' : '▼'} {Math.abs(revenueGrowth).toFixed(1)}% 전월 대비
+          <div className="gradient-border card-elevated rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-2xl"></div>
+            <div className="relative">
+              <div className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wider">이번달 총 매출</div>
+              <div className="text-4xl font-bold mb-2">
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  {formatCurrency(calculatedTotalRevenue)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  revenueGrowth > 0
+                    ? 'bg-green-500/10 text-green-400'
+                    : 'bg-red-500/10 text-red-400'
+                }`}>
+                  {revenueGrowth > 0 ? '↑' : '↓'} {Math.abs(revenueGrowth).toFixed(1)}%
+                </span>
+                <span className="text-xs text-gray-500">전월 대비</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* 총 광고주 수 */}
-        <div className="card-elevated rounded-lg p-5 mb-6">
+        <div className="card-elevated rounded-2xl p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs font-medium text-gray-400 mb-2">총 광고주</div>
-              <div className="text-3xl font-bold text-gray-100 number-display">
-                {calculatedTotalClients}개
+              <div className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wider">총 광고주</div>
+              <div className="text-4xl font-bold">
+                <span className="number-display">{calculatedTotalClients}</span>
+                <span className="text-xl text-gray-400 ml-1">개</span>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4 text-right">
-              {calculatedClientsByChannel.map((channel, index) => (
-                <div key={index}>
-                  <div className="text-xs text-gray-400 mb-1">{channel.channel}</div>
-                  <div className="text-lg font-bold text-gray-200 number-display">{channel.value}</div>
-                </div>
-              ))}
+            <div className="grid grid-cols-4 gap-6">
+              {calculatedClientsByChannel.map((channel, index) => {
+                const colors = [
+                  'from-blue-400 to-blue-600',
+                  'from-purple-400 to-purple-600',
+                  'from-orange-400 to-orange-600',
+                  'from-pink-400 to-pink-600'
+                ];
+                return (
+                  <div key={index} className="text-center">
+                    <div className={`w-16 h-16 mx-auto mb-2 rounded-xl bg-gradient-to-br ${colors[index]} p-0.5`}>
+                      <div className="w-full h-full bg-black/80 rounded-xl flex items-center justify-center">
+                        <span className="text-2xl font-bold text-white">{channel.value}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400">{channel.channel}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -427,18 +564,27 @@ export default function DashboardPage() {
         {/* 메인 컨텐츠 그리드 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* AE 주간 리포트 집계 */}
-          <div className="lg:col-span-3 card-elevated rounded-lg p-6">
-            <div className="mb-5">
+          <div className="lg:col-span-3 gradient-border card-elevated rounded-2xl p-6">
+            <div className="mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-bold text-gray-100 mb-1">이번 주 AE 리포트 집계</h2>
-                  <p className="text-xs text-gray-400">{currentWeek} | {weeklyAggregation.reportedAEs}명 / {data.aeData.length}명 제출</p>
+                  <h2 className="text-lg font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-2">
+                    이번 주 AE 리포트 집계
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-semibold">
+                      {currentWeek}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {weeklyAggregation.reportedAEs}명 / {data.aeData.length}명 제출
+                    </span>
+                  </div>
                 </div>
-                <Link 
+                <Link
                   href="/ae"
-                  className="btn-secondary px-4 py-2 rounded-lg text-xs font-semibold"
+                  className="btn-primary px-5 py-2.5 rounded-xl text-sm font-semibold relative overflow-hidden group"
                 >
-                  리포트 입력 →
+                  <span>리포트 입력 →</span>
                 </Link>
               </div>
             </div>
@@ -731,25 +877,22 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                <div className="text-xs text-yellow-400 mb-1">이번달 종료</div>
+                <div className="text-xs text-yellow-400 mb-1">이번 주 종료 예정</div>
                 <div className="text-3xl font-bold text-yellow-400 number-display">
-                  {data.currentMonthExpiring.total}
+                  {calculatedExpiringClients}
                 </div>
               </div>
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-                <div className="text-xs text-orange-400 mb-1">다음달 종료 예정</div>
-                <div className="text-3xl font-bold text-orange-400 number-display">
-                  {data.nextMonthExpiring.total}
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                <div className="text-xs text-green-400 mb-1">이번 주 연장 성공</div>
+                <div className="text-3xl font-bold text-green-400 number-display">
+                  {calculatedRenewedClients}
                 </div>
               </div>
               <div className="pt-3 border-t border-gray-700/50">
-                <div className="text-xs text-gray-400 mb-2">매체별 이번달 종료</div>
-                {data.currentMonthExpiring.byChannel.map((item, index) => (
-                  <div key={index} className="flex justify-between py-1.5">
-                    <span className="text-xs text-gray-400">{item.channel}</span>
-                    <span className="text-xs font-semibold text-gray-200">{item.value}개</span>
-                  </div>
-                ))}
+                <div className="text-xs text-gray-400 mb-2">이번 주 연장율</div>
+                <div className="text-2xl font-bold text-blue-400 number-display">
+                  {calculatedRenewalRate.toFixed(1)}%
+                </div>
               </div>
             </div>
           </div>
@@ -761,39 +904,30 @@ export default function DashboardPage() {
           <div className="card-elevated rounded-lg p-6">
             <div className="mb-5">
               <h2 className="text-base font-bold text-gray-100 mb-1">연장 현황</h2>
-              <p className="text-xs text-gray-400">월별 비교</p>
+              <p className="text-xs text-gray-400">이번 주 실적</p>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-5">
               <div className="text-center p-4 bg-gray-800/30 rounded-lg">
-                <div className="text-xs text-gray-400 mb-2">지난달</div>
-                <div className="text-xl font-bold text-gray-100 mb-1 number-display">
-                  {data.lastMonthRenewal.count}개
-                </div>
-                <div className="text-xs text-green-400 font-semibold">
-                  {formatPercent(data.lastMonthRenewal.rate)}
+                <div className="text-xs text-gray-400 mb-2">종료 예정</div>
+                <div className="text-xl font-bold text-yellow-400 mb-1 number-display">
+                  {calculatedExpiringClients}개
                 </div>
               </div>
               <div className="text-center p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <div className="text-xs text-gray-400 mb-2">이번달</div>
+                <div className="text-xs text-gray-400 mb-2">연장 성공</div>
                 <div className="text-xl font-bold text-green-400 mb-1 number-display">
-                  {data.currentMonthRenewal.count}개
+                  {calculatedRenewedClients}개
                 </div>
                 <div className="text-xs text-green-400 font-semibold">
-                  {formatPercent(data.currentMonthRenewal.rate)}
+                  {calculatedRenewalRate.toFixed(1)}%
                 </div>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="text-xs text-gray-400 mb-2">매체별 이번달 연장율</div>
-              {data.currentMonthRenewal.byChannel.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-800/50">
-                  <span className="text-sm text-gray-300">{item.channel}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-400">{item.count}개</span>
-                    <span className="text-sm font-semibold text-green-400">{formatPercent(item.rate)}</span>
-                  </div>
-                </div>
-              ))}
+              <div className="text-xs text-gray-400 mb-2">연장 매출</div>
+              <div className="text-2xl font-bold text-purple-400 number-display">
+                {formatCurrency(calculatedRenewalRevenue)}
+              </div>
             </div>
           </div>
 
@@ -801,40 +935,39 @@ export default function DashboardPage() {
           <div className="card-elevated rounded-lg p-6">
             <div className="mb-5">
               <h2 className="text-base font-bold text-gray-100 mb-1">신규 광고주</h2>
-              <p className="text-xs text-gray-400">월별 비교</p>
+              <p className="text-xs text-gray-400">이번 주 실적</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="text-center p-4 bg-gray-800/30 rounded-lg">
-                <div className="text-xs text-gray-400 mb-2">지난달</div>
-                <div className="text-xl font-bold text-gray-100 number-display">
-                  {data.lastMonthNewClients.total}개
-                </div>
-              </div>
+            <div className="mb-5">
               <div className="text-center p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <div className="text-xs text-gray-400 mb-2">이번달</div>
-                <div className="text-xl font-bold text-blue-400 number-display">
-                  {data.currentMonthNewClients.total}개
+                <div className="text-xs text-gray-400 mb-2">이번 주 신규</div>
+                <div className="text-xl font-bold text-blue-400 mb-1 number-display">
+                  {calculatedNewClients}개
+                </div>
+                <div className="text-xs text-blue-400 font-semibold">
+                  {formatCurrency(calculatedNewRevenue)}
                 </div>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="text-xs text-gray-400 mb-2">매체별 이번달 신규</div>
-              {data.currentMonthNewClients.byChannel.map((item, index) => {
-                const maxValue = Math.max(...data.currentMonthNewClients.byChannel.map(c => c.value));
-                const percentage = (item.value / maxValue) * 100;
-                
+              <div className="text-xs text-gray-400 mb-2">매체별 신규</div>
+              {calculatedNewClientsByChannel.map((item, index) => {
+                const maxValue = Math.max(...calculatedNewClientsByChannel.map(c => c.value));
+                const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+
                 return (
                   <div key={index}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm text-gray-300">{item.channel}</span>
                       <span className="text-sm font-semibold text-gray-100">{item.value}개</span>
                     </div>
-                    <div className="w-full bg-gray-800/50 rounded-full h-1.5">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-purple-400 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
+                    {item.value > 0 && (
+                      <div className="w-full bg-gray-800/50 rounded-full h-1.5">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-purple-400 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -846,7 +979,7 @@ export default function DashboardPage() {
         <div className="card-elevated rounded-lg p-6">
           <div className="mb-5">
             <h2 className="text-base font-bold text-gray-100 mb-1">AE별 담당 현황</h2>
-            <p className="text-xs text-gray-400">총 {data.aeData.reduce((sum, ae) => sum + ae.clientCount, 0)}개 광고주 관리 중</p>
+            <p className="text-xs text-gray-400">총 {calculatedTotalClients}개 광고주 관리 중</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -860,13 +993,19 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.aeData
-                  .sort((a, b) => b.clientCount - a.clientCount)
+                {aeWeeklyPerformance
+                  .sort((a, b) => {
+                    // 리포트 제출한 AE를 우선 정렬
+                    if (!a.reported && !b.reported) return 0;
+                    if (!a.reported) return 1;
+                    if (!b.reported) return -1;
+                    return b.totalClients - a.totalClients;
+                  })
                   .map((ae, index) => {
-                    const total = data.aeData.reduce((sum, a) => sum + a.clientCount, 0);
-                    const percentage = (ae.clientCount / total) * 100;
-                    const maxCount = Math.max(...data.aeData.map(a => a.clientCount));
-                    const barWidth = (ae.clientCount / maxCount) * 100;
+                    const total = aeWeeklyPerformance.filter(a => a.reported).reduce((sum, a) => sum + a.totalClients, 0);
+                    const percentage = ae.reported && total > 0 ? (ae.totalClients / total) * 100 : 0;
+                    const maxCount = Math.max(...aeWeeklyPerformance.filter(a => a.reported).map(a => a.totalClients));
+                    const barWidth = ae.reported && maxCount > 0 ? (ae.totalClients / maxCount) * 100 : 0;
 
                     return (
                       <tr key={index} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
@@ -884,18 +1023,26 @@ export default function DashboardPage() {
                           <div className="font-semibold text-gray-100">{ae.name}</div>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <div className="text-lg font-bold text-gray-100 number-display">{ae.clientCount}</div>
+                          <div className="text-lg font-bold text-gray-100 number-display">
+                            {ae.reported ? ae.totalClients : '-'}
+                          </div>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <div className="text-sm text-gray-400">{percentage.toFixed(1)}%</div>
+                          <div className="text-sm text-gray-400">
+                            {ae.reported ? `${percentage.toFixed(1)}%` : '-'}
+                          </div>
                         </td>
                         <td className="py-4 px-4">
-                          <div className="w-full bg-gray-800/50 rounded-full h-2">
-                            <div 
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${barWidth}%` }}
-                            ></div>
-                          </div>
+                          {ae.reported ? (
+                            <div className="w-full bg-gray-800/50 rounded-full h-2">
+                              <div
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${barWidth}%` }}
+                              ></div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-500">리포트 미제출</span>
+                          )}
                         </td>
                       </tr>
                     );

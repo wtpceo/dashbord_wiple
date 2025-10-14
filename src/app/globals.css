@@ -3,156 +3,362 @@
 @tailwind utilities;
 
 :root {
-  --background: #0f1419;
-  --foreground: #e6edf3;
-  --primary-blue: #58a6ff;
-  --primary-purple: #a371f7;
-  --success-green: #3fb950;
-  --warning-red: #f85149;
-  --warning-yellow: #d29922;
+  --background: #050714;
+  --background-secondary: #0a0e1b;
+  --foreground: #ffffff;
+  --foreground-muted: #94a3b8;
+  --primary-blue: #3b82f6;
+  --primary-purple: #8b5cf6;
+  --primary-cyan: #06b6d4;
+  --success-green: #10b981;
+  --warning-red: #ef4444;
+  --warning-yellow: #f59e0b;
+  --warning-orange: #f97316;
+
+  /* Gradient Colors */
+  --gradient-from: #3b82f6;
+  --gradient-via: #8b5cf6;
+  --gradient-to: #ec4899;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.03) 0%, transparent 50%);
+  min-height: 100vh;
 }
 
-/* 차분한 그리드 배경 */
-.cyber-grid {
-  background-image: 
-    linear-gradient(rgba(88, 166, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(88, 166, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 부드러운 글로우 효과 */
-.neon-glow {
-  box-shadow: 0 0 15px rgba(88, 166, 255, 0.15);
-}
-
-.neon-glow-green {
-  box-shadow: 0 0 15px rgba(63, 185, 80, 0.15);
-}
-
-.neon-glow-purple {
-  box-shadow: 0 0 15px rgba(163, 113, 247, 0.15);
-}
-
-/* 가독성 좋은 카드 */
+/* Modern card with glass effect */
 .card-elevated {
-  background: linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(13, 17, 23, 0.95));
-  border: 1px solid rgba(88, 166, 255, 0.2);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-elevated:hover {
-  border-color: rgba(88, 166, 255, 0.4);
-  box-shadow: 0 4px 20px rgba(88, 166, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 40px 0 rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* 깔끔한 입력 필드 */
+/* Gradient borders */
+.gradient-border {
+  position: relative;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(40px);
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    var(--primary-blue),
+    var(--primary-purple),
+    var(--gradient-to));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.gradient-border:hover::before {
+  opacity: 0.8;
+}
+
+/* Neon glow effects */
+.neon-glow {
+  box-shadow:
+    0 0 20px rgba(59, 130, 246, 0.5),
+    0 0 40px rgba(59, 130, 246, 0.3),
+    0 0 60px rgba(59, 130, 246, 0.1);
+}
+
+.neon-glow-green {
+  box-shadow:
+    0 0 20px rgba(16, 185, 129, 0.5),
+    0 0 40px rgba(16, 185, 129, 0.3),
+    0 0 60px rgba(16, 185, 129, 0.1);
+}
+
+.neon-glow-purple {
+  box-shadow:
+    0 0 20px rgba(139, 92, 246, 0.5),
+    0 0 40px rgba(139, 92, 246, 0.3),
+    0 0 60px rgba(139, 92, 246, 0.1);
+}
+
+/* Modern input fields */
 .input-field {
-  background: rgba(13, 17, 23, 0.8);
-  border: 1px solid rgba(88, 166, 255, 0.2);
-  color: #e6edf3;
-  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-field:focus {
   outline: none;
-  border-color: rgba(88, 166, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+  border-color: var(--primary-blue);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.1),
+    0 0 20px rgba(59, 130, 246, 0.2);
 }
 
-/* 가독성 좋은 버튼 */
+/* Modern gradient buttons */
 .btn-primary {
-  background: linear-gradient(135deg, #1f6feb, #58a6ff);
+  background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
   border: none;
   color: white;
   font-weight: 600;
-  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--primary-purple), var(--gradient-to));
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 10px 20px rgba(59, 130, 246, 0.4),
+    0 6px 6px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary span {
+  position: relative;
+  z-index: 1;
 }
 
 .btn-secondary {
-  background: rgba(22, 27, 34, 0.8);
-  border: 1px solid rgba(88, 166, 255, 0.3);
-  color: #58a6ff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
   font-weight: 600;
-  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
 }
 
 .btn-secondary:hover {
-  background: rgba(22, 27, 34, 1);
-  border-color: rgba(88, 166, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* 부드러운 애니메이션 제거 또는 최소화 */
-@keyframes subtle-pulse {
-  0%, 100% {
-    opacity: 1;
+.btn-secondary:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Modern animations */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
   }
   50% {
-    opacity: 0.7;
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
-.status-indicator {
-  animation: subtle-pulse 2s ease-in-out infinite;
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
-/* 가독성 좋은 구분선 */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.4);
+  }
+}
+
+.gradient-animation {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+.pulse-animation {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Status indicators with modern glow */
+.status-indicator {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-active {
+  background: var(--success-green);
+  box-shadow:
+    0 0 0 2px rgba(16, 185, 129, 0.2),
+    0 0 20px rgba(16, 185, 129, 0.6);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.status-warning {
+  background: var(--warning-yellow);
+  box-shadow:
+    0 0 0 2px rgba(245, 158, 11, 0.2),
+    0 0 20px rgba(245, 158, 11, 0.6);
+}
+
+.status-error {
+  background: var(--warning-red);
+  box-shadow:
+    0 0 0 2px rgba(239, 68, 68, 0.2),
+    0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+/* Modern divider */
 .divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(88, 166, 255, 0.2), transparent);
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 80%,
+    transparent);
 }
 
-/* 스캔라인 효과 제거 */
-.scanlines {
-  position: relative;
-}
-
-/* 커스텀 스크롤바 - 더 차분하게 */
+/* Custom scrollbar with modern design */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(13, 17, 23, 0.5);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(88, 166, 255, 0.3);
-  border-radius: 6px;
+  background: linear-gradient(180deg,
+    var(--primary-blue) 0%,
+    var(--primary-purple) 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(88, 166, 255, 0.5);
+  background: linear-gradient(180deg,
+    var(--primary-purple) 0%,
+    var(--gradient-to) 100%);
 }
 
-/* 코너 장식 - 더 얇게 */
-.corner-decoration::before,
-.corner-decoration::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-style: solid;
-  border-width: 1px;
-  opacity: 0.5;
-}
-
-/* 숫자 표시 - 더 읽기 쉽게 */
+/* Modern number display */
 .number-display {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg,
+    #ffffff 0%,
+    #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Data card animations */
+.data-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.data-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg,
+    var(--primary-blue),
+    var(--primary-purple),
+    var(--gradient-to),
+    var(--primary-blue));
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+
+.data-card:hover::before {
+  opacity: 1;
+  animation: gradient-shift 3s ease infinite;
 }
 
 @layer utilities {
