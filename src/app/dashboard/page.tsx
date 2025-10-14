@@ -172,124 +172,101 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* KPI 카드 섹션 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* 목표 매출 달성률 - 더 큰 카드 */}
-          <div className="md:col-span-2 card-elevated rounded-lg p-6">
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className="text-xs font-medium text-gray-400 mb-1">이번달 목표 달성률</div>
-                  <div className="text-4xl font-bold text-gray-100 number-display">
-                    {achievementRate.toFixed(1)}%
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-400 mb-1">목표</div>
-                  <div className="text-lg font-semibold text-gray-300">
-                    {formatCurrency(data.targetRevenue)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">현재</div>
-                  <div className="text-lg font-semibold text-blue-400">
-                    {formatCurrency(data.currentMonthRevenue.total)}
-                  </div>
-                </div>
+        {/* 최상단 KPI: 목표 매출 + 신규 매출 + 연장 매출 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          {/* 목표 매출 달성률 */}
+          <div className="card-elevated rounded-lg p-6">
+            <div className="text-xs font-medium text-gray-400 mb-2">🎯 이번달 목표 달성률</div>
+            <div className="text-4xl font-bold text-gray-100 number-display mb-3">
+              {achievementRate.toFixed(1)}%
+            </div>
+            
+            {/* 게이지 바 */}
+            <div className="relative mb-3">
+              <div className="w-full h-6 bg-gray-800/50 rounded-full overflow-hidden border border-gray-700/50">
+                <div 
+                  className={`h-full transition-all duration-1000 ease-out ${
+                    achievementRate >= 100 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+                      : achievementRate >= 80
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
+                        : achievementRate >= 60
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-400'
+                          : 'bg-gradient-to-r from-red-500 to-pink-400'
+                  }`}
+                  style={{ width: `${Math.min(achievementRate, 100)}%` }}
+                ></div>
               </div>
-              
-              {/* 게이지 바 */}
-              <div className="relative">
-                {/* 배경 바 */}
-                <div className="w-full h-8 bg-gray-800/50 rounded-full overflow-hidden border border-gray-700/50">
-                  {/* 진행 바 */}
-                  <div 
-                    className={`h-full transition-all duration-1000 ease-out flex items-center justify-end px-3 ${
-                      achievementRate >= 100 
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-400'
-                        : achievementRate >= 80
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-                          : achievementRate >= 60
-                            ? 'bg-gradient-to-r from-yellow-500 to-orange-400'
-                            : 'bg-gradient-to-r from-red-500 to-pink-400'
-                    }`}
-                    style={{ width: `${Math.min(achievementRate, 100)}%` }}
-                  >
-                    <span className="text-xs font-bold text-white">
-                      {achievementRate >= 10 && `${achievementRate.toFixed(1)}%`}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* 목표선 (100%) */}
-                {achievementRate < 100 && (
-                  <div className="absolute top-0 right-0 h-8 w-0.5 bg-gray-400">
-                    <div className="absolute -top-1 -right-8 text-xs text-gray-400">목표</div>
-                  </div>
-                )}
-              </div>
-              
-              {/* 상태 메시지 */}
-              <div className="mt-3 text-center">
-                <span className={`text-sm font-semibold ${
-                  achievementRate >= 100 
-                    ? 'text-green-400'
-                    : achievementRate >= 80
-                      ? 'text-blue-400'
-                      : achievementRate >= 60
-                        ? 'text-yellow-400'
-                        : 'text-red-400'
-                }`}>
-                  {achievementRate >= 100 
-                    ? '🎉 목표 달성!'
-                    : achievementRate >= 80
-                      ? '💪 목표 근접!'
-                      : achievementRate >= 60
-                        ? '📈 순조롭게 진행 중'
-                        : '⚡ 더 노력이 필요해요'}
-                  {' '}
-                  {achievementRate < 100 && `(${formatCurrency(data.targetRevenue - data.currentMonthRevenue.total)} 남음)`}
-                </span>
-              </div>
+            </div>
+            
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">목표: {formatCurrency(data.targetRevenue)}</span>
+              <span className="text-blue-400 font-semibold">{formatCurrency(data.currentMonthRevenue.total)}</span>
             </div>
           </div>
 
-          {/* 총 광고주 */}
-          <div className="card-elevated rounded-lg p-5">
-            <div className="text-xs font-medium text-gray-400 mb-2">총 광고주</div>
-            <div className="text-2xl font-bold text-gray-100 mb-1 number-display">
-              {data.totalClients.total}
+          {/* 이번달 신규 매출 */}
+          <div className="card-elevated rounded-lg p-6">
+            <div className="text-xs font-medium text-gray-400 mb-2">💼 이번달 신규 매출</div>
+            <div className="text-4xl font-bold text-green-400 mb-3 number-display">
+              {formatCurrency(salesAggregation.newRevenue)}
             </div>
-            <div className="text-xs text-gray-500">운영 중</div>
+            <div className="text-xs text-gray-500">
+              신규 계약 {salesAggregation.newClients}개
+            </div>
           </div>
 
-          {/* 연장율 */}
-          <div className="card-elevated rounded-lg p-5">
-            <div className="text-xs font-medium text-gray-400 mb-2">이번달 연장율</div>
-            <div className="text-2xl font-bold text-green-400 mb-1 number-display">
-              {formatPercent(data.currentMonthRenewal.rate)}
+          {/* 이번달 연장 매출 */}
+          <div className="card-elevated rounded-lg p-6">
+            <div className="text-xs font-medium text-gray-400 mb-2">🔄 이번달 연장 매출</div>
+            <div className="text-4xl font-bold text-purple-400 mb-3 number-display">
+              {formatCurrency(weeklyAggregation.renewalRevenue)}
             </div>
-            <div className="text-xs text-gray-500">{data.currentMonthRenewal.count}개 업체 연장</div>
+            <div className="text-xs text-gray-500">
+              연장 성공 {weeklyAggregation.renewedClients}개 ({weeklyRenewalRate.toFixed(1)}%)
+            </div>
           </div>
         </div>
 
-        {/* 매출 비교 카드 */}
+        {/* 매출 비교 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* 지난달 매출 */}
+          {/* 지난달 총 매출 */}
           <div className="card-elevated rounded-lg p-5">
             <div className="text-xs font-medium text-gray-400 mb-2">지난달 총 매출</div>
-            <div className="text-2xl font-bold text-gray-100 mb-1 number-display">
+            <div className="text-3xl font-bold text-gray-100 mb-1 number-display">
               {formatCurrency(data.lastMonthRevenue.total)}
             </div>
             <div className="text-xs text-gray-500">전월 실적</div>
           </div>
 
-          {/* 이번달 매출 */}
+          {/* 이번달 총 매출 */}
           <div className="card-elevated rounded-lg p-5">
             <div className="text-xs font-medium text-gray-400 mb-2">이번달 총 매출</div>
-            <div className="text-2xl font-bold text-gray-100 mb-1 number-display">
+            <div className="text-3xl font-bold text-blue-400 mb-1 number-display">
               {formatCurrency(data.currentMonthRevenue.total)}
             </div>
             <div className={`text-xs font-semibold ${revenueGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
               {revenueGrowth > 0 ? '▲' : '▼'} {Math.abs(revenueGrowth).toFixed(1)}% 전월 대비
+            </div>
+          </div>
+        </div>
+
+        {/* 총 광고주 수 */}
+        <div className="card-elevated rounded-lg p-5 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-medium text-gray-400 mb-2">총 광고주</div>
+              <div className="text-3xl font-bold text-gray-100 number-display">
+                {data.totalClients.total}개
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-4 text-right">
+              {data.totalClients.byChannel.map((channel, index) => (
+                <div key={index}>
+                  <div className="text-xs text-gray-400 mb-1">{channel.channel}</div>
+                  <div className="text-lg font-bold text-gray-200 number-display">{channel.value}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
