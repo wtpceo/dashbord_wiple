@@ -93,6 +93,40 @@ export default function DashboardPage() {
     return (b.renewalRate || 0) - (a.renewalRate || 0);
   });
 
+  // 영업사원 이번 주 신규 매출 집계
+  const salesAggregation = data.salesData.reduce((acc, sales) => {
+    const weeklyReports = sales.weeklyReports || [];
+    const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    
+    if (thisWeekReport) {
+      acc.newClients += thisWeekReport.newClients;
+      acc.newRevenue += thisWeekReport.newRevenue;
+      acc.reportedSales += 1;
+    }
+    
+    return acc;
+  }, {
+    newClients: 0,
+    newRevenue: 0,
+    reportedSales: 0
+  });
+
+  // 영업사원별 이번 주 성과
+  const salesWeeklyPerformance = data.salesData.map(sales => {
+    const weeklyReports = sales.weeklyReports || [];
+    const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    return {
+      name: sales.name,
+      reported: !!thisWeekReport,
+      ...thisWeekReport
+    };
+  }).sort((a, b) => {
+    if (!a.reported && !b.reported) return 0;
+    if (!a.reported) return 1;
+    if (!b.reported) return -1;
+    return (b.newRevenue || 0) - (a.newRevenue || 0);
+  });
+
   if (!mounted) {
     // 서버 렌더링 시에는 로딩 상태 표시
     return (
@@ -387,6 +421,110 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-3 px-4 text-center">
                             {ae.reported ? (
+                              <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">
+                                제출 완료
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-700/30 text-gray-500">
+                                미제출
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 영업사원 신규 매출 집계 */}
+          <div className="lg:col-span-2 card-elevated rounded-lg p-6">
+            <div className="border-b border-gray-700/50 pb-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-gray-100 mb-1">💼 이번 주 영업사원 신규 매출</h2>
+                  <p className="text-xs text-gray-400">{currentWeek} | {salesAggregation.reportedSales}명 / {data.salesData.length}명 제출</p>
+                </div>
+                <Link 
+                  href="/ae"
+                  className="btn-secondary px-4 py-2 rounded-lg text-xs font-semibold"
+                >
+                  리포트 입력 →
+                </Link>
+              </div>
+            </div>
+
+            {salesAggregation.reportedSales === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p className="mb-2">아직 제출된 영업사원 리포트가 없습니다.</p>
+                <p className="text-sm">영업사원들이 금요일에 리포트를 입력하면 여기에 자동으로 집계됩니다.</p>
+              </div>
+            ) : (
+              <div>
+                {/* 주간 집계 KPI */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/30">
+                    <div className="text-xs text-green-400 mb-1">신규 계약 수</div>
+                    <div className="text-2xl font-bold text-green-400 number-display">{salesAggregation.newClients}</div>
+                  </div>
+                  <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
+                    <div className="text-xs text-blue-400 mb-1">신규 매출</div>
+                    <div className="text-xl font-bold text-blue-400 number-display">
+                      {formatCurrency(salesAggregation.newRevenue)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 영업사원별 성과 테이블 */}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-700/50">
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400">순위</th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400">영업사원</th>
+                        <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">신규 계약</th>
+                        <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">신규 매출</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400">상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {salesWeeklyPerformance.map((sales, index) => (
+                        <tr key={sales.name} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                          <td className="py-3 px-4">
+                            {sales.reported ? (
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-gray-700/20 text-gray-400'
+                              }`}>
+                                {index + 1}
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-gray-800/20 text-gray-600">
+                                -
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-semibold text-gray-100">{sales.name}</span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="text-green-400 font-semibold number-display">
+                              {sales.reported ? sales.newClients : '-'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {sales.reported ? (
+                              <span className="text-blue-400 font-semibold number-display">
+                                {formatCurrency(sales.newRevenue || 0)}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {sales.reported ? (
                               <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">
                                 제출 완료
                               </span>
