@@ -65,10 +65,11 @@ export default function AEReportPage({ params }: { params: Promise<{ name: strin
           ? currentReports.map((r, i) => i === existingIndex ? newReport : r)
           : [...currentReports, newReport];
 
-        console.log(`${aeName} 업데이트된 리포트 수:`, updatedReports.length);
+        console.log(`${aeName} 업데이트 - 담당 업체 수: ${formData.totalClients}, 리포트 수: ${updatedReports.length}`);
 
         return {
           ...ae,
+          clientCount: formData.totalClients, // 👈 AE별 담당 현황에 표시될 숫자 업데이트!
           weeklyReports: updatedReports.sort((a, b) => b.week.localeCompare(a.week))
         };
       }
