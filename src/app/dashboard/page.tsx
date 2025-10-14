@@ -56,11 +56,14 @@ export default function DashboardPage() {
     const weeklyReports = ae.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
     
-    if (thisWeekReport) {
-      acc.totalClients += thisWeekReport.totalClients;
-      acc.expiringClients += thisWeekReport.expiringClients;
-      acc.renewedClients += thisWeekReport.renewedClients;
-      acc.renewalRevenue += thisWeekReport.renewalRevenue || 0;
+    if (thisWeekReport && thisWeekReport.byChannel) {
+      // 매체별 데이터를 합산
+      thisWeekReport.byChannel.forEach(channelReport => {
+        acc.totalClients += channelReport.totalClients;
+        acc.expiringClients += channelReport.expiringClients;
+        acc.renewedClients += channelReport.renewedClients;
+        acc.renewalRevenue += channelReport.renewalRevenue || 0;
+      });
       acc.reportedAEs += 1;
     }
     
@@ -77,14 +80,40 @@ export default function DashboardPage() {
     ? (weeklyAggregation.renewedClients / weeklyAggregation.expiringClients) * 100 
     : 0;
 
-  // AE별 이번 주 성과
+  // AE별 이번 주 성과 (매체별 데이터 합산)
   const aeWeeklyPerformance = data.aeData.map(ae => {
     const weeklyReports = ae.weeklyReports || [];
     const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    
+    if (!thisWeekReport || !thisWeekReport.byChannel) {
+      return {
+        name: ae.name,
+        reported: false,
+        totalClients: 0,
+        expiringClients: 0,
+        renewedClients: 0,
+        renewalRevenue: 0,
+        renewalRate: 0
+      };
+    }
+
+    // 매체별 데이터를 합산
+    const aggregated = thisWeekReport.byChannel.reduce((sum, ch) => ({
+      totalClients: sum.totalClients + ch.totalClients,
+      expiringClients: sum.expiringClients + ch.expiringClients,
+      renewedClients: sum.renewedClients + ch.renewedClients,
+      renewalRevenue: sum.renewalRevenue + ch.renewalRevenue
+    }), { totalClients: 0, expiringClients: 0, renewedClients: 0, renewalRevenue: 0 });
+
+    const renewalRate = aggregated.expiringClients > 0
+      ? (aggregated.renewedClients / aggregated.expiringClients) * 100
+      : 0;
+
     return {
       name: ae.name,
-      reported: !!thisWeekReport,
-      ...thisWeekReport
+      reported: true,
+      ...aggregated,
+      renewalRate
     };
   }).sort((a, b) => {
     if (!a.reported && !b.reported) return 0;

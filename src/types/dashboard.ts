@@ -50,15 +50,21 @@ export interface NewClients {
   byChannel: ChannelData[]; // 매체별 신규 광고주 수
 }
 
+// 매체별 AE 리포트 상세 데이터
+export interface AEChannelReport {
+  channel: MarketingChannel;
+  totalClients: number; // 담당 업체 수
+  expiringClients: number; // 종료 예정 업체 수
+  renewedClients: number; // 연장 성공 업체 수
+  renewalRevenue: number; // 연장 매출
+  renewalRate: number; // 연장율 (자동 계산)
+}
+
 // AE 주간 리포트 데이터
 export interface AEWeeklyReport {
   week: string; // 주차 (예: "2025-W03")
   date: string; // 입력 날짜
-  totalClients: number; // 현재 담당 업체 수
-  expiringClients: number; // 이번주 종료 예정 업체 수
-  renewedClients: number; // 연장 성공 업체 수
-  renewalRate: number; // 연장율 (자동 계산)
-  renewalRevenue?: number; // 이번달 연장 매출
+  byChannel: AEChannelReport[]; // 매체별 리포트
   note?: string; // 특이사항
 }
 
