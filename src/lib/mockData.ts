@@ -134,13 +134,16 @@ export const getDashboardData = async (): Promise<DashboardData> => {
       .eq('id', DASHBOARD_ID)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Supabase 조회 에러:', error);
-      // 테이블이 없는 경우가 아니면 에러 처리
-      if (error.code !== 'PGRST204') {
-        console.log('로컬 스토리지로 Fallback');
-        return getDashboardDataFromLocal();
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.error('Supabase 테이블이 없습니다:', error);
+      } else {
+        console.error('Supabase 조회 에러:', error);
       }
+      // 에러 시 로컬 데이터로 폴백하지 않고 초기 데이터 생성
+      const initialData = generateMockData();
+      await saveDashboardData(initialData);
+      return initialData;
     }
 
     if (data && data.data) {
@@ -205,8 +208,8 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     
   } catch (error) {
     console.error('Supabase 연결 에러:', error);
-    console.log('로컬 스토리지로 Fallback');
-    return getDashboardDataFromLocal();
+    // 에러 시에도 초기 데이터 반환 (로컬 스토리지 사용하지 않음)
+    return generateMockData();
   }
 };
 
@@ -305,13 +308,10 @@ export const saveDashboardData = async (data: DashboardData): Promise<void> => {
 
     if (error) {
       console.error('Supabase 저장 에러:', error);
-      // 에러 시 로컬에도 저장
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(DASHBOARD_DATA_KEY, JSON.stringify(data));
-      }
+      throw error; // 에러를 상위로 전파
     } else {
       console.log('Supabase에 데이터 저장 완료');
-      // 로컬 스토리지는 동기화하지 않음 (Supabase가 메인)
+      console.log('저장된 데이터:', data);
     }
   } catch (error) {
     console.error('Supabase 연결 에러:', error);
