@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { DashboardData } from '@/types/dashboard';
 import { getDashboardData, saveDashboardData, generateMockData } from '@/lib/mockData';
+import { getSupabaseClient } from '@/lib/supabase';
 
 interface DashboardContextType {
   data: DashboardData;
@@ -33,6 +34,44 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadData();
+  }, []);
+
+  // Supabase 실시간 구독 설정
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    console.log('🔄 Supabase 실시간 구독 설정 중...');
+
+    // dashboard_data 테이블의 변경사항을 구독
+    const subscription = supabase
+      .channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE 모든 이벤트
+          schema: 'public',
+          table: 'dashboard_data',
+          filter: 'id=eq.default'
+        },
+        (payload) => {
+          console.log('📡 Supabase 변경사항 감지:', payload);
+
+          // 데이터가 변경되면 자동으로 새로고침
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const newData = payload.new.data as DashboardData;
+            setData(newData);
+            console.log('✅ 실시간 데이터 동기화 완료');
+          }
+        }
+      )
+      .subscribe();
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('🔌 Supabase 구독 해제');
+      subscription.unsubscribe();
+    };
   }, []);
 
   // 데이터 업데이트 함수

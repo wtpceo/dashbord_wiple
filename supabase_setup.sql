@@ -160,3 +160,7 @@ $$;
 
 -- 테이블 권한 설정
 GRANT ALL ON dashboard_data TO anon, authenticated;
+
+-- 실시간 기능 활성화 (Realtime)
+-- Supabase Dashboard에서도 활성화 가능: Database > Replication > dashboard_data 테이블 선택
+ALTER PUBLICATION supabase_realtime ADD TABLE dashboard_data;
