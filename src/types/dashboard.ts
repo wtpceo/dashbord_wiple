@@ -66,6 +66,7 @@ export interface AEWeeklyReport {
 export interface SalesWeeklyReport {
   week: string; // 주차 (예: "2025-W03")
   date: string; // 입력 날짜
+  channel: MarketingChannel; // 신규 계약 매체
   newClients: number; // 신규 계약 업체 수
   newRevenue: number; // 신규 계약 매출
   note?: string; // 특이사항

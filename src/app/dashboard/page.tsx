@@ -461,6 +461,7 @@ export default function DashboardPage() {
                       <tr className="border-b border-gray-700/50">
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400">순위</th>
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400">영업사원</th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400">매체</th>
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">신규 계약</th>
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400">신규 매출</th>
                         <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400">상태</th>
@@ -485,6 +486,13 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-3 px-4">
                             <span className="font-semibold text-gray-100">{sales.name}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {sales.reported ? (
+                              <span className="text-cyan-400 font-medium text-sm">{sales.channel}</span>
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-right">
                             <span className="text-green-400 font-semibold number-display">

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
-import { AEName, SalesName, AEWeeklyReport, SalesWeeklyReport } from '@/types/dashboard';
+import { AEName, SalesName, AEWeeklyReport, SalesWeeklyReport, MarketingChannel } from '@/types/dashboard';
 import { getCurrentWeek, formatDate } from '@/lib/mockData';
 import Link from 'next/link';
 
@@ -33,6 +33,7 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
   const [salesFormData, setSalesFormData] = useState<SalesWeeklyReport>({
     week: getCurrentWeek(),
     date: formatDate(new Date()),
+    channel: '토탈 마케팅',
     newClients: 0,
     newRevenue: 0,
     note: '',
@@ -190,6 +191,25 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                 )}
 
                 <div className="space-y-4">
+                  {/* 매체 선택 */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      신규 계약 매체
+                    </label>
+                    <select
+                      value={salesFormData.channel}
+                      onChange={(e) => setSalesFormData({ ...salesFormData, channel: e.target.value as MarketingChannel })}
+                      className="input-field w-full px-4 py-3 rounded-lg text-gray-100 text-lg"
+                      required
+                    >
+                      <option value="토탈 마케팅">토탈 마케팅</option>
+                      <option value="퍼포먼스">퍼포먼스</option>
+                      <option value="배달관리">배달관리</option>
+                      <option value="브랜드블로그">브랜드블로그</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">신규 계약한 광고주의 매체를 선택하세요</p>
+                  </div>
+
                   {/* 신규 계약 업체 수 */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-300 mb-2">
@@ -259,6 +279,10 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                 <h3 className="text-base font-bold text-gray-100 mb-4">이번 주 요약</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-gray-800/50">
+                    <span className="text-sm text-gray-400">매체</span>
+                    <span className="text-lg font-bold text-cyan-400">{salesFormData.channel}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-800/50">
                     <span className="text-sm text-gray-400">신규 계약</span>
                     <span className="text-lg font-bold text-green-400 number-display">{salesFormData.newClients}</span>
                   </div>
@@ -285,6 +309,10 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
                           <div className="text-xs text-gray-500">{report.date}</div>
                         </div>
                         <div className="space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">매체</span>
+                            <span className="font-semibold text-cyan-400">{(report as SalesWeeklyReport).channel}</span>
+                          </div>
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">신규 계약</span>
                             <span className="font-semibold text-green-400">{(report as SalesWeeklyReport).newClients}개</span>
