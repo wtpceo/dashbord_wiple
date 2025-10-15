@@ -19,7 +19,7 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
   const isSales = !!salesData;
   
   // AE 리포트 폼 - 매체별 데이터
-  const channels: MarketingChannel[] = ['토탈 마케팅', '퍼포먼스', '배달관리', '브랜드블로그'];
+  const channels: MarketingChannel[] = ['토탈 마케팅', '퍼포먼스', '배달관리', '브랜드블로그', '댓글', '미디어', '당근'];
   
   const [aeChannelData, setAeChannelData] = useState<AEChannelReport[]>(
     channels.map(channel => ({
@@ -261,9 +261,9 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
           </div>
 
           <form onSubmit={handleSalesSubmit}>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* 전체 요약 카드 */}
-              <div className="card-elevated rounded-lg p-6">
+              <div className="card-elevated rounded-lg p-6 md:col-span-2 lg:col-span-1">
                 <h3 className="text-base font-bold text-gray-100 mb-4">전체 요약</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-gray-800/50">
@@ -440,9 +440,9 @@ export default function ReportPage({ params }: { params: Promise<{ name: string 
         </div>
 
         <form onSubmit={handleAESubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* 전체 요약 카드 */}
-            <div className="card-elevated rounded-lg p-6">
+            <div className="card-elevated rounded-lg p-6 md:col-span-2 lg:col-span-1">
               <h3 className="text-base font-bold text-gray-100 mb-4">전체 요약</h3>
               <div className="space-y-3">
                 <div className="flex justify-between py-2 border-b border-gray-800/50">

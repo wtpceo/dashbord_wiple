@@ -250,7 +250,10 @@ export default function DashboardPage() {
       '토탈 마케팅': 0,
       '퍼포먼스': 0,
       '배달관리': 0,
-      '브랜드블로그': 0
+      '브랜드블로그': 0,
+      '댓글': 0,
+      '미디어': 0,
+      '당근': 0
     };
 
     // AE 연장 매출 집계
@@ -299,7 +302,10 @@ export default function DashboardPage() {
       '토탈 마케팅': 0,
       '퍼포먼스': 0,
       '배달관리': 0,
-      '브랜드블로그': 0
+      '브랜드블로그': 0,
+      '댓글': 0,
+      '미디어': 0,
+      '당근': 0
     };
 
     // 영업사원 신규 계약 집계
@@ -325,7 +331,10 @@ export default function DashboardPage() {
       '토탈 마케팅': 0,
       '퍼포먼스': 0,
       '배달관리': 0,
-      '브랜드블로그': 0
+      '브랜드블로그': 0,
+      '댓글': 0,
+      '미디어': 0,
+      '당근': 0
     };
 
     // AE 담당 광고주 집계
@@ -923,7 +932,10 @@ export default function DashboardPage() {
                     '토탈 마케팅': 'from-blue-500 to-cyan-400',
                     '퍼포먼스': 'from-purple-500 to-violet-400',
                     '배달관리': 'from-orange-500 to-amber-400',
-                    '브랜드블로그': 'from-pink-500 to-rose-400'
+                    '브랜드블로그': 'from-pink-500 to-rose-400',
+                    '댓글': 'from-green-500 to-emerald-400',
+                    '미디어': 'from-indigo-500 to-blue-400',
+                    '당근': 'from-yellow-500 to-orange-400'
                   };
 
                   return (
@@ -968,7 +980,10 @@ export default function DashboardPage() {
                     '토탈 마케팅': 'from-blue-400 to-blue-600',
                     '퍼포먼스': 'from-purple-400 to-purple-600',
                     '배달관리': 'from-orange-400 to-orange-600',
-                    '브랜드블로그': 'from-pink-400 to-pink-600'
+                    '브랜드블로그': 'from-pink-400 to-pink-600',
+                    '댓글': 'from-green-400 to-green-600',
+                    '미디어': 'from-indigo-400 to-indigo-600',
+                    '당근': 'from-yellow-400 to-yellow-600'
                   };
 
                   return (

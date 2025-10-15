@@ -1,5 +1,5 @@
 // 마케팅 매체 타입
-export type MarketingChannel = '토탈 마케팅' | '퍼포먼스' | '배달관리' | '브랜드블로그';
+export type MarketingChannel = '토탈 마케팅' | '퍼포먼스' | '배달관리' | '브랜드블로그' | '댓글' | '미디어' | '당근';
 
 // AE 이름 타입 - 더 유연하게 string으로 변경
 export type AEName = string;
