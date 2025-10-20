@@ -4,12 +4,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { DashboardData } from '@/types/dashboard';
 import { getDashboardData, saveDashboardData, generateMockData } from '@/lib/mockData';
 import { getSupabaseClient } from '@/lib/supabase';
+import { createAutoSnapshot } from '@/lib/snapshotManager';
 
 interface DashboardContextType {
   data: DashboardData;
   loading: boolean;
   updateData: (newData: DashboardData) => Promise<void>;
   resetData: () => void;
+  resetMonthlyReports: () => Promise<void>;
   reloadData: () => Promise<void>;
 }
 
@@ -99,14 +101,18 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       reportCount: ae.weeklyReports?.length || 0,
       reports: ae.weeklyReports || []
     })));
-    
+
     // 즉시 상태 업데이트
     setData(newData);
     console.log('✅ React state 업데이트 완료');
-    
+
     try {
       await saveDashboardData(newData);
       console.log('✅ saveDashboardData 완료');
+
+      // 자동 스냅샷 생성 (백업)
+      await createAutoSnapshot(newData);
+      console.log('✅ 자동 스냅샷 백업 완료');
     } catch (error) {
       console.error('❌ saveDashboardData 에러:', error);
       throw error;
@@ -118,6 +124,26 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     const freshData = generateMockData();
     setData(freshData);
     saveDashboardData(freshData);
+  };
+
+  // 월간 리포트만 리셋하는 함수
+  const resetMonthlyReports = async () => {
+    console.log('🔄 월간 리포트 리셋 중...');
+    const newData = {
+      ...data,
+      aeData: data.aeData.map(ae => ({
+        ...ae,
+        weeklyReports: [] // AE 주간 리포트 비우기
+      })),
+      salesData: data.salesData.map(sales => ({
+        ...sales,
+        weeklyReports: [] // 영업사원 주간 리포트 비우기
+      }))
+    };
+
+    setData(newData);
+    await saveDashboardData(newData);
+    console.log('✅ 월간 리포트 리셋 완료');
   };
 
   // 데이터 다시 로드 함수
@@ -136,7 +162,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <DashboardContext.Provider value={{ data, loading, updateData, resetData, reloadData }}>
+    <DashboardContext.Provider value={{ data, loading, updateData, resetData, resetMonthlyReports, reloadData }}>
       {children}
     </DashboardContext.Provider>
   );

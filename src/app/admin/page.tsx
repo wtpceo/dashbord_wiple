@@ -1,17 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
 import { DashboardData, MarketingChannel, AEName } from '@/types/dashboard';
 import Link from 'next/link';
+import { getAllSnapshots, restoreFromSnapshot, Snapshot } from '@/lib/snapshotManager';
 
 const channels: MarketingChannel[] = ['토탈 마케팅', '퍼포먼스', '배달관리', '브랜드블로그'];
 const aeNames: AEName[] = ['이수빈', '최호천', '조아라', '정우진', '김민우', '양주미'];
 
 export default function AdminPage() {
-  const { data, updateData, resetData } = useDashboard();
+  const { data, updateData, resetData, resetMonthlyReports, reloadData } = useDashboard();
   const [formData, setFormData] = useState<DashboardData>(data);
   const [saved, setSaved] = useState(false);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [loadingSnapshots, setLoadingSnapshots] = useState(true);
+
+  // 스냅샷 목록 로드
+  useEffect(() => {
+    const loadSnapshots = async () => {
+      setLoadingSnapshots(true);
+      const snapshotList = await getAllSnapshots();
+      setSnapshots(snapshotList);
+      setLoadingSnapshots(false);
+    };
+    loadSnapshots();
+  }, []);
 
   const handleSave = () => {
     updateData(formData);
@@ -23,6 +37,29 @@ export default function AdminPage() {
     if (confirm('모든 데이터를 초기화하시겠습니까?')) {
       resetData();
       setFormData(data);
+    }
+  };
+
+  const handleMonthlyReset = async () => {
+    if (confirm('월간 리포트를 리셋하시겠습니까?\n\n⚠️ AE와 영업사원의 주간 리포트만 삭제되며,\n매출 목표, 광고주 수 등 다른 데이터는 유지됩니다.')) {
+      await resetMonthlyReports();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
+  };
+
+  // 스냅샷 복구 핸들러
+  const handleRestore = async (snapshotId: string, snapshotDate: string) => {
+    if (confirm(`${snapshotDate} 스냅샷으로 복구하시겠습니까?\n\n⚠️ 현재 데이터가 스냅샷 시점의 데이터로 대체됩니다.`)) {
+      const restoredData = await restoreFromSnapshot(snapshotId);
+      if (restoredData) {
+        await reloadData(); // 복구된 데이터 다시 로드
+        setFormData(restoredData); // 폼 데이터도 업데이트
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert('❌ 복구 실패: 스냅샷을 찾을 수 없습니다.');
+      }
     }
   };
 
@@ -115,17 +152,23 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="flex gap-3 flex-wrap">
-              <Link 
+              <Link
                 href="/dashboard"
                 className="btn-secondary px-5 py-3 rounded-lg text-sm font-semibold"
               >
                 ← 대시보드
               </Link>
               <button
+                onClick={handleMonthlyReset}
+                className="px-5 py-3 rounded-lg text-sm font-semibold bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:bg-orange-500/30 transition-colors"
+              >
+                📅 월간 리포트 리셋
+              </button>
+              <button
                 onClick={handleReset}
                 className="px-5 py-3 rounded-lg text-sm font-semibold bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors"
               >
-                🔄 초기화
+                🔄 전체 초기화
               </button>
               <button
                 onClick={handleSave}
@@ -141,6 +184,117 @@ export default function AdminPage() {
               ✅ 데이터가 성공적으로 저장되었습니다
             </div>
           )}
+        </div>
+
+        {/* 리셋 기능 안내 */}
+        <div className="mb-8">
+          <div className="card-elevated rounded-lg p-6">
+            <h3 className="text-base font-bold text-gray-100 mb-4 flex items-center gap-2">
+              <span>ℹ️</span>
+              <span>리셋 기능 안내</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="glass-card rounded-lg p-4 border border-orange-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">📅</span>
+                  <h4 className="text-sm font-bold text-orange-400">월간 리포트 리셋</h4>
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  매월 초에 사용하세요. AE와 영업사원의 주간 리포트만 삭제되며,
+                  매출 목표, 광고주 수, 지난달 데이터 등은 <span className="text-green-400 font-semibold">그대로 유지</span>됩니다.
+                </p>
+              </div>
+              <div className="glass-card rounded-lg p-4 border border-red-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🔄</span>
+                  <h4 className="text-sm font-bold text-red-400">전체 데이터 초기화</h4>
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  <span className="text-red-400 font-semibold">모든 데이터</span>를 초기값으로 되돌립니다.
+                  주의: 입력된 모든 리포트와 설정이 삭제되며 복구할 수 없습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 스냅샷 복구 */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-blue-400 rounded"></div>
+            <h2 className="text-xl font-bold text-gray-100">
+              📸 데이터 백업 복구
+            </h2>
+          </div>
+          <div className="card-elevated rounded-lg p-6">
+            <div className="mb-4">
+              <p className="text-sm text-gray-400">
+                데이터가 자동으로 백업됩니다. 문제가 발생하면 아래 백업 시점으로 복구할 수 있습니다.
+              </p>
+            </div>
+
+            {loadingSnapshots ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400">백업 목록 로딩 중...</div>
+              </div>
+            ) : snapshots.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500">저장된 백업이 없습니다.</div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {snapshots.map((snapshot) => {
+                  const snapshotDate = new Date(snapshot.snapshot_date).toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+
+                  // 스냅샷 데이터 요약
+                  const aeCount = snapshot.data.aeData?.length || 0;
+                  const salesCount = snapshot.data.salesData?.length || 0;
+                  const aeWithReports = snapshot.data.aeData?.filter(ae => ae.weeklyReports && ae.weeklyReports.length > 0).length || 0;
+                  const salesWithReports = snapshot.data.salesData?.filter(s => s.weeklyReports && s.weeklyReports.length > 0).length || 0;
+
+                  return (
+                    <div
+                      key={snapshot.id}
+                      className="glass-card rounded-lg p-4 border border-blue-500/30 hover:border-blue-400/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-400 font-bold text-sm">
+                              {snapshot.year}년 {snapshot.month}월 백업
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({snapshot.id})
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-400 space-y-1">
+                            <div>📅 백업 시간: {snapshotDate}</div>
+                            <div className="flex gap-4">
+                              <span>👥 AE: {aeWithReports}/{aeCount}명 리포트 제출</span>
+                              <span>💼 영업: {salesWithReports}/{salesCount}명 리포트 제출</span>
+                            </div>
+                            <div>💰 목표 매출: {(snapshot.data.targetRevenue || 0).toLocaleString()}원</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRestore(snapshot.id, snapshotDate)}
+                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 transition-colors whitespace-nowrap"
+                        >
+                          ↺ 복구
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 매출 데이터 */}
@@ -428,12 +582,18 @@ export default function AdminPage() {
         </div>
 
         {/* 하단 저장 버튼 */}
-        <div className="flex justify-center gap-6 mb-8">
+        <div className="flex justify-center gap-4 mb-8 flex-wrap">
+          <button
+            onClick={handleMonthlyReset}
+            className="px-8 py-4 rounded-lg font-semibold bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:bg-orange-500/30 transition-colors"
+          >
+            📅 월간 리포트 리셋
+          </button>
           <button
             onClick={handleReset}
-            className="px-10 py-4 rounded-lg font-semibold bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors"
+            className="px-8 py-4 rounded-lg font-semibold bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors"
           >
-            🔄 데이터 초기화
+            🔄 전체 데이터 초기화
           </button>
           <button
             onClick={handleSave}
