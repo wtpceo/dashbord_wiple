@@ -10,7 +10,7 @@ const channels: MarketingChannel[] = ['토탈 마케팅', '퍼포먼스', '배�
 const aeNames: AEName[] = ['이수빈', '최호천', '조아라', '정우진', '김민우', '양주미'];
 
 export default function AdminPage() {
-  const { data, updateData, resetData, resetMonthlyReports, reloadData } = useDashboard();
+  const { data, updateData, resetData, resetMonthlyReports } = useDashboard();
   const [formData, setFormData] = useState<DashboardData>(data);
   const [saved, setSaved] = useState(false);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
