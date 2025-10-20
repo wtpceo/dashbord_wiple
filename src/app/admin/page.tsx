@@ -53,10 +53,9 @@ export default function AdminPage() {
     if (confirm(`${snapshotDate} 스냅샷으로 복구하시겠습니까?\n\n⚠️ 현재 데이터가 스냅샷 시점의 데이터로 대체됩니다.`)) {
       const restoredData = await restoreFromSnapshot(snapshotId);
       if (restoredData) {
-        await reloadData(); // 복구된 데이터 다시 로드
-        setFormData(restoredData); // 폼 데이터도 업데이트
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        alert('✅ 데이터 복구가 완료되었습니다.\n페이지를 새로고침합니다.');
+        // 전체 페이지 새로고침으로 모든 탭에 데이터 반영
+        window.location.reload();
       } else {
         alert('❌ 복구 실패: 스냅샷을 찾을 수 없습니다.');
       }
