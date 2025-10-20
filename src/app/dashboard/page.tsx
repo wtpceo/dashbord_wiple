@@ -33,30 +33,60 @@ export default function DashboardPage() {
   let tempLastMonthRevenue = data.lastMonthRevenue.total;
   let tempCurrentMonthRevenue = 0;  // 실제 데이터에서 계산될 것
 
-  // AE 데이터 집계 함수
-  const getCurrentWeekFromDate = () => {
+  // 월별 데이터 집계 함수
+  const getCurrentMonth = () => {
     const now = new Date();
-    const year = now.getFullYear();
-    const startOfYear = new Date(year, 0, 1);
-    const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-    return `${year}-W${String(weekNumber).padStart(2, '0')}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  const currentWeek = getCurrentWeekFromDate();
+  const currentMonth = getCurrentMonth();
 
-  // 이번달 AE 리포트 집계
-  const weeklyAggregation = data.aeData.reduce((acc, ae) => {
+  // 주차 번호를 월로 변환하는 헬퍼 함수
+  const getMonthFromWeek = (weekString: string): string => {
+    // "2025-W42" 형식에서 연도와 주차 추출
+    const match = weekString.match(/^(\d{4})-W(\d{1,2})$/);
+    if (!match) return '';
+
+    const year = parseInt(match[1]);
+    const week = parseInt(match[2]);
+
+    // 해당 연도의 1월 1일
+    const jan1 = new Date(year, 0, 1);
+
+    // 첫 번째 목요일까지의 일수 계산 (ISO 8601 주차 정의)
+    const daysToFirstThursday = (11 - jan1.getDay()) % 7;
+
+    // 해당 주의 목요일 날짜 계산
+    const thursday = new Date(year, 0, 1 + daysToFirstThursday + (week - 1) * 7);
+
+    return `${thursday.getFullYear()}-${String(thursday.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // 이번 달의 리포트인지 확인하는 함수
+  const isCurrentMonthReport = (weekString: string): boolean => {
+    if (!weekString) return false;
+    const reportMonth = getMonthFromWeek(weekString);
+    return reportMonth === currentMonth;
+  };
+
+  // 이번달 AE 리포트 집계 (월별 누적)
+  const monthlyAggregation = data.aeData.reduce((acc, ae) => {
     const weeklyReports = ae.weeklyReports || [];
-    const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    // 이번 달의 모든 리포트를 집계
+    const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
 
-    if (thisWeekReport && thisWeekReport.byChannel) {
-      // 매체별 데이터를 합산
-      thisWeekReport.byChannel.forEach(channelReport => {
-        acc.totalClients += channelReport.totalClients;
-        acc.expiringClients += channelReport.expiringClients;
-        acc.renewedClients += channelReport.renewedClients;
-        acc.renewalRevenue += channelReport.renewalRevenue || 0;
+    if (thisMonthReports.length > 0) {
+      thisMonthReports.forEach(report => {
+        if (report.byChannel) {
+          // 매체별 데이터를 합산
+          report.byChannel.forEach(channelReport => {
+            // totalClients는 최대값 사용 (중복 카운트 방지)
+            acc.totalClients = Math.max(acc.totalClients, channelReport.totalClients || 0);
+            acc.expiringClients += channelReport.expiringClients || 0;
+            acc.renewedClients += channelReport.renewedClients || 0;
+            acc.renewalRevenue += channelReport.renewalRevenue || 0;
+          });
+        }
       });
       acc.reportedAEs += 1;
     }
@@ -70,16 +100,17 @@ export default function DashboardPage() {
     reportedAEs: 0
   });
 
-  const weeklyRenewalRate = weeklyAggregation.expiringClients > 0
-    ? (weeklyAggregation.renewedClients / weeklyAggregation.expiringClients) * 100
+  const monthlyRenewalRate = monthlyAggregation.expiringClients > 0
+    ? (monthlyAggregation.renewedClients / monthlyAggregation.expiringClients) * 100
     : 0;
 
-  // AE별 이번달 성과 (매체별 데이터 합산)
-  const aeWeeklyPerformance = data.aeData.map(ae => {
+  // AE별 이번달 성과 (월별 누적, 매체별 데이터 합산)
+  const aeMonthlyPerformance = data.aeData.map(ae => {
     const weeklyReports = ae.weeklyReports || [];
-    const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    // 이번 달의 모든 리포트를 집계
+    const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
 
-    if (!thisWeekReport || !thisWeekReport.byChannel) {
+    if (thisMonthReports.length === 0) {
       return {
         name: ae.name,
         reported: false,
@@ -91,13 +122,18 @@ export default function DashboardPage() {
       };
     }
 
-    // 매체별 데이터를 합산
-    const aggregated = thisWeekReport.byChannel.reduce((sum, ch) => ({
-      totalClients: sum.totalClients + ch.totalClients,
-      expiringClients: sum.expiringClients + ch.expiringClients,
-      renewedClients: sum.renewedClients + ch.renewedClients,
-      renewalRevenue: sum.renewalRevenue + ch.renewalRevenue
-    }), { totalClients: 0, expiringClients: 0, renewedClients: 0, renewalRevenue: 0 });
+    // 이번 달의 모든 리포트를 합산
+    const aggregated = thisMonthReports.reduce((sum, report) => {
+      if (report.byChannel) {
+        report.byChannel.forEach(ch => {
+          sum.totalClients = Math.max(sum.totalClients, ch.totalClients || 0);
+          sum.expiringClients += ch.expiringClients || 0;
+          sum.renewedClients += ch.renewedClients || 0;
+          sum.renewalRevenue += ch.renewalRevenue || 0;
+        });
+      }
+      return sum;
+    }, { totalClients: 0, expiringClients: 0, renewedClients: 0, renewalRevenue: 0 });
 
     const renewalRate = aggregated.expiringClients > 0
       ? (aggregated.renewedClients / aggregated.expiringClients) * 100
@@ -116,16 +152,21 @@ export default function DashboardPage() {
     return (b.renewalRate || 0) - (a.renewalRate || 0);
   });
 
-  // 영업사원 이번달 신규 매출 집계
+  // 영업사원 이번달 신규 매출 집계 (월별 누적)
   const salesAggregation = data.salesData.reduce((acc, sales) => {
     const weeklyReports = sales.weeklyReports || [];
-    const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    // 이번 달의 모든 리포트를 집계
+    const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
 
-    if (thisWeekReport && thisWeekReport.byChannel) {
-      // 매체별 데이터를 합산
-      thisWeekReport.byChannel.forEach(channelReport => {
-        acc.newClients += channelReport.newClients;
-        acc.newRevenue += channelReport.newRevenue;
+    if (thisMonthReports.length > 0) {
+      thisMonthReports.forEach(report => {
+        if (report.byChannel) {
+          // 매체별 데이터를 합산
+          report.byChannel.forEach(channelReport => {
+            acc.newClients += channelReport.newClients || 0;
+            acc.newRevenue += channelReport.newRevenue || 0;
+          });
+        }
       });
       acc.reportedSales += 1;
     }
@@ -137,12 +178,13 @@ export default function DashboardPage() {
     reportedSales: 0
   });
 
-  // 영업사원별 이번달 성과 (매체별 데이터 합산)
-  const salesWeeklyPerformance = data.salesData.map(sales => {
+  // 영업사원별 이번달 성과 (월별 누적, 매체별 데이터 합산)
+  const salesMonthlyPerformance = data.salesData.map(sales => {
     const weeklyReports = sales.weeklyReports || [];
-    const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
+    // 이번 달의 모든 리포트를 집계
+    const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
 
-    if (!thisWeekReport || !thisWeekReport.byChannel) {
+    if (thisMonthReports.length === 0) {
       return {
         name: sales.name,
         reported: false,
@@ -152,16 +194,28 @@ export default function DashboardPage() {
       };
     }
 
-    // 매체별 데이터를 합산
-    const aggregated = thisWeekReport.byChannel.reduce((sum, ch) => ({
-      newClients: sum.newClients + ch.newClients,
-      newRevenue: sum.newRevenue + ch.newRevenue
-    }), { newClients: 0, newRevenue: 0 });
+    // 이번 달의 모든 리포트를 합산
+    const aggregated = thisMonthReports.reduce((sum, report) => {
+      if (report.byChannel) {
+        report.byChannel.forEach(ch => {
+          sum.newClients += ch.newClients || 0;
+          sum.newRevenue += ch.newRevenue || 0;
+        });
+      }
+      return sum;
+    }, { newClients: 0, newRevenue: 0 });
 
-    // 가장 많은 매출을 발생시킨 매체 찾기
-    const mainChannel = thisWeekReport.byChannel.reduce((prev, current) =>
-      current.newRevenue > prev.newRevenue ? current : prev
-    );
+    // 가장 많은 매출을 발생시킨 매체 찾기 (모든 리포트에서)
+    let mainChannel = { channel: '' as any, newRevenue: 0 };
+    thisMonthReports.forEach(report => {
+      if (report.byChannel) {
+        report.byChannel.forEach(ch => {
+          if (ch.newRevenue > mainChannel.newRevenue) {
+            mainChannel = ch;
+          }
+        });
+      }
+    });
 
     return {
       name: sales.name,
@@ -180,20 +234,12 @@ export default function DashboardPage() {
   // 📊 실제 데이터 기반 계산 (이번 달 전체 집계)
   // ============================================
 
-  // 이번 달의 모든 주차 데이터 집계를 위한 함수
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  };
-
-  const currentMonth = getCurrentMonth();
-
   // 이번 달 전체 AE 데이터 집계
   const monthlyAEAggregation = data.aeData.reduce((acc, ae) => {
     const weeklyReports = ae.weeklyReports || [];
     // 이번 달의 모든 주차 리포트 집계
     weeklyReports.forEach(report => {
-      if (report.week && report.week.startsWith(currentMonth.substring(0, 7))) {
+      if (isCurrentMonthReport(report.week)) {
         if (report.byChannel) {
           report.byChannel.forEach(channelReport => {
             acc.totalClients = Math.max(acc.totalClients, channelReport.totalClients || 0);
@@ -217,7 +263,7 @@ export default function DashboardPage() {
     const weeklyReports = sales.weeklyReports || [];
     // 이번 달의 모든 주차 리포트 집계
     weeklyReports.forEach(report => {
-      if (report.week && report.week.startsWith(currentMonth.substring(0, 7))) {
+      if (isCurrentMonthReport(report.week)) {
         if (report.byChannel) {
           report.byChannel.forEach(channelReport => {
             acc.newClients += channelReport.newClients || 0;
@@ -236,13 +282,13 @@ export default function DashboardPage() {
   const calculatedNewRevenue = monthlySalesAggregation.newRevenue || salesAggregation.newRevenue;
 
   // 2. 이번달 연장 매출 = AE들의 연장 매출의 합
-  const calculatedRenewalRevenue = monthlyAEAggregation.renewalRevenue || weeklyAggregation.renewalRevenue;
+  const calculatedRenewalRevenue = monthlyAEAggregation.renewalRevenue || monthlyAggregation.renewalRevenue;
 
   // 3. 이번달 총 매출 = 신규 매출 + 연장 매출
   const calculatedTotalRevenue = calculatedNewRevenue + calculatedRenewalRevenue;
 
   // 4. 총 광고주 = AE들이 가지고 있는 광고주의 합 (가장 최근 리포트 기준)
-  const calculatedTotalClients = weeklyAggregation.totalClients || monthlyAEAggregation.totalClients;
+  const calculatedTotalClients = monthlyAggregation.totalClients || monthlyAEAggregation.totalClients;
 
   // 5. 매체별 매출 현황 = 영업사원과 AE들의 매체별 매출의 합
   const calculatedRevenueByChannel = (() => {
@@ -256,26 +302,30 @@ export default function DashboardPage() {
       '당근': 0
     };
 
-    // AE 연장 매출 집계
+    // AE 연장 매출 집계 (월별 누적)
     data.aeData.forEach(ae => {
       const weeklyReports = ae.weeklyReports || [];
-      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-      if (thisWeekReport && thisWeekReport.byChannel) {
-        thisWeekReport.byChannel.forEach(ch => {
-          channels[ch.channel] = (channels[ch.channel] || 0) + ch.renewalRevenue;
-        });
-      }
+      const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
+      thisMonthReports.forEach(report => {
+        if (report.byChannel) {
+          report.byChannel.forEach(ch => {
+            channels[ch.channel] = (channels[ch.channel] || 0) + (ch.renewalRevenue || 0);
+          });
+        }
+      });
     });
 
-    // 영업사원 신규 매출 집계
+    // 영업사원 신규 매출 집계 (월별 누적)
     data.salesData.forEach(sales => {
       const weeklyReports = sales.weeklyReports || [];
-      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-      if (thisWeekReport && thisWeekReport.byChannel) {
-        thisWeekReport.byChannel.forEach(ch => {
-          channels[ch.channel] = (channels[ch.channel] || 0) + ch.newRevenue;
-        });
-      }
+      const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
+      thisMonthReports.forEach(report => {
+        if (report.byChannel) {
+          report.byChannel.forEach(ch => {
+            channels[ch.channel] = (channels[ch.channel] || 0) + (ch.newRevenue || 0);
+          });
+        }
+      });
     });
 
     return Object.entries(channels).map(([channel, value]) => ({
@@ -285,10 +335,10 @@ export default function DashboardPage() {
   })();
 
   // 6. 종료 예정 현황 = AE들의 광고주 종료 예정의 합
-  const calculatedExpiringClients = weeklyAggregation.expiringClients;
+  const calculatedExpiringClients = monthlyAggregation.expiringClients;
 
   // 7. 연장 현황 = 이번달 AE들의 연장한 업체의 합
-  const calculatedRenewedClients = weeklyAggregation.renewedClients;
+  const calculatedRenewedClients = monthlyAggregation.renewedClients;
   const calculatedRenewalRate = calculatedExpiringClients > 0
     ? (calculatedRenewedClients / calculatedExpiringClients) * 100
     : 0;
@@ -308,15 +358,17 @@ export default function DashboardPage() {
       '당근': 0
     };
 
-    // 영업사원 신규 계약 집계
+    // 영업사원 신규 계약 집계 (월별 누적)
     data.salesData.forEach(sales => {
       const weeklyReports = sales.weeklyReports || [];
-      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-      if (thisWeekReport && thisWeekReport.byChannel) {
-        thisWeekReport.byChannel.forEach(ch => {
-          channels[ch.channel] = (channels[ch.channel] || 0) + ch.newClients;
-        });
-      }
+      const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
+      thisMonthReports.forEach(report => {
+        if (report.byChannel) {
+          report.byChannel.forEach(ch => {
+            channels[ch.channel] = (channels[ch.channel] || 0) + (ch.newClients || 0);
+          });
+        }
+      });
     });
 
     return Object.entries(channels).map(([channel, value]) => ({
@@ -337,15 +389,17 @@ export default function DashboardPage() {
       '당근': 0
     };
 
-    // AE 담당 광고주 집계
+    // AE 담당 광고주 집계 (월별 누적)
     data.aeData.forEach(ae => {
       const weeklyReports = ae.weeklyReports || [];
-      const thisWeekReport = weeklyReports.find(r => r.week === currentWeek);
-      if (thisWeekReport && thisWeekReport.byChannel) {
-        thisWeekReport.byChannel.forEach(ch => {
-          channels[ch.channel] = (channels[ch.channel] || 0) + ch.totalClients;
-        });
-      }
+      const thisMonthReports = weeklyReports.filter(r => isCurrentMonthReport(r.week));
+      thisMonthReports.forEach(report => {
+        if (report.byChannel) {
+          report.byChannel.forEach(ch => {
+            channels[ch.channel] = Math.max(channels[ch.channel] || 0, ch.totalClients || 0);
+          });
+        }
+      });
     });
 
     return Object.entries(channels).map(([channel, value]) => ({
@@ -409,6 +463,12 @@ export default function DashboardPage() {
               className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold"
             >
               데이터 관리
+            </Link>
+            <Link
+              href="/analytics/history-x9k2p7"
+              className="btn-secondary px-5 py-2.5 rounded-lg text-sm font-semibold"
+            >
+              📊 히스토리
             </Link>
           </div>
         </div>
@@ -648,10 +708,10 @@ export default function DashboardPage() {
                   </h2>
                   <div className="flex items-center gap-2">
                     <span className="badge-modern bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400">
-                      {currentWeek}
+                      {currentMonth}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {weeklyAggregation.reportedAEs}명 / {data.aeData.length}명 제출
+                      {monthlyAggregation.reportedAEs}명 / {data.aeData.length}명 제출
                     </span>
                   </div>
                 </div>
@@ -664,36 +724,36 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {weeklyAggregation.reportedAEs === 0 ? (
+            {monthlyAggregation.reportedAEs === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 <p className="mb-2">아직 제출된 리포트가 없습니다.</p>
                 <p className="text-sm">AE들이 리포트를 입력하면 여기에 자동으로 집계됩니다.</p>
               </div>
             ) : (
               <div>
-                {/* 주간 집계 KPI */}
+                {/* 월간 집계 KPI */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                   <div className="neumorphic-inset rounded-lg p-4">
                     <div className="text-xs text-gray-400 mb-1">총 담당 업체</div>
-                    <div className="text-2xl font-bold text-gray-100 number-display">{weeklyAggregation.totalClients}</div>
+                    <div className="text-2xl font-bold text-gray-100 number-display">{monthlyAggregation.totalClients}</div>
                   </div>
                   <div className="glass-card bg-yellow-500/10 rounded-lg p-4 border border-yellow-500/30">
                     <div className="text-xs text-yellow-400 mb-1">이번달 종료 예정</div>
-                    <div className="text-2xl font-bold text-yellow-400 number-transition">{weeklyAggregation.expiringClients}</div>
+                    <div className="text-2xl font-bold text-yellow-400 number-transition">{monthlyAggregation.expiringClients}</div>
                   </div>
                   <div className="glass-card bg-green-500/10 rounded-lg p-4 border border-green-500/30">
                     <div className="text-xs text-green-400 mb-1">연장 성공</div>
-                    <div className="text-2xl font-bold text-green-400 number-transition">{weeklyAggregation.renewedClients}</div>
+                    <div className="text-2xl font-bold text-green-400 number-transition">{monthlyAggregation.renewedClients}</div>
                   </div>
                   <div className="glass-card bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
                     <div className="text-xs text-purple-400 mb-1">연장 매출</div>
                     <div className="text-xl font-bold text-purple-400 number-transition">
-                      {formatCurrency(weeklyAggregation.renewalRevenue)}
+                      {formatCurrency(monthlyAggregation.renewalRevenue)}
                     </div>
                   </div>
                   <div className="glass-card bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
                     <div className="text-xs text-blue-400 mb-1">이번달 연장율</div>
-                    <div className="text-2xl font-bold text-blue-400 number-transition">{weeklyRenewalRate.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-blue-400 number-transition">{monthlyRenewalRate.toFixed(1)}%</div>
                   </div>
                 </div>
 
@@ -713,7 +773,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {aeWeeklyPerformance.map((ae, index) => (
+                      {aeMonthlyPerformance.map((ae, index) => (
                         <tr key={ae.name} className="border-b border-gray-800/50 hover:bg-gradient-to-r hover:from-transparent hover:via-purple-500/5 hover:to-transparent transition-all duration-300">
                           <td className="py-3 px-4">
                             {ae.reported ? (
@@ -844,7 +904,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {salesWeeklyPerformance.map((sales, index) => (
+                      {salesMonthlyPerformance.map((sales, index) => (
                         <tr key={sales.name} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
                           <td className="py-3 px-4">
                             {sales.reported ? (
@@ -1051,7 +1111,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {aeWeeklyPerformance
+                  {aeMonthlyPerformance
                     .sort((a, b) => {
                       // 리포트 제출한 AE를 우선 정렬
                       if (!a.reported && !b.reported) return 0;
@@ -1060,9 +1120,9 @@ export default function DashboardPage() {
                       return b.totalClients - a.totalClients;
                     })
                     .map((ae, index) => {
-                      const total = aeWeeklyPerformance.filter(a => a.reported).reduce((sum, a) => sum + a.totalClients, 0);
+                      const total = aeMonthlyPerformance.filter(a => a.reported).reduce((sum, a) => sum + a.totalClients, 0);
                       const percentage = ae.reported && total > 0 ? (ae.totalClients / total) * 100 : 0;
-                      const maxCount = Math.max(...aeWeeklyPerformance.filter(a => a.reported).map(a => a.totalClients));
+                      const maxCount = Math.max(...aeMonthlyPerformance.filter(a => a.reported).map(a => a.totalClients));
                       const barWidth = ae.reported && maxCount > 0 ? (ae.totalClients / maxCount) * 100 : 0;
 
                       return (
