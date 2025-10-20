@@ -107,7 +107,7 @@ export default function HistoryPage() {
               저장된 월별 데이터가 없습니다
             </h2>
             <p className="text-gray-400 mb-6">
-              "이번 달 저장" 버튼을 눌러 첫 번째 스냅샷을 생성하세요
+              &quot;이번 달 저장&quot; 버튼을 눌러 첫 번째 스냅샷을 생성하세요
             </p>
           </div>
         )}
